@@ -17,3 +17,6 @@ Thumbs.db
 
 # Archivo accidental generado por terminal
 *You have unstaged changes*
+
+# VS CODE
+.vscode/
