@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class SupplierAdapterPersistence implements SupplierRepository {
 
     private final SupplierDAO supplierDAO;
