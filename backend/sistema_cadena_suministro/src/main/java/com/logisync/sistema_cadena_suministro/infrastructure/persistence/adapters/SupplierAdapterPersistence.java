@@ -7,7 +7,6 @@ import com.logisync.sistema_cadena_suministro.infrastructure.persistence.Supplie
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.entities.SupplierEntity;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.mappers.SupplierPersistenceMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
