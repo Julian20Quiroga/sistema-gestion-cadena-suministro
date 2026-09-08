@@ -3,7 +3,6 @@ package com.logisync.sistema_cadena_suministro.infrastructure.persistence.entiti
 import com.logisync.sistema_cadena_suministro.domain.enums.SoftDeleteStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -27,14 +26,4 @@ public class SupplierEntity extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private SoftDeleteStatus status;
 
-    @Override
-    public String toString() {
-        return "SupplierEntity{" +
-                "nit='" + nit + '\'' +
-                ", name='" + name + '\'' +
-                ", phone='" + phone + '\'' +
-                ", email='" + email + '\'' +
-                ", status=" + status +
-                '}';
-    }
 }
