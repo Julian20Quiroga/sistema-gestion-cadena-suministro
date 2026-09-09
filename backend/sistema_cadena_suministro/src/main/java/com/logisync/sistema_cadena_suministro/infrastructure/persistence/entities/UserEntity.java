@@ -23,11 +23,11 @@ public class UserEntity extends BaseEntity {
     @Column(name = "password_hash")
     private String passwordHash;
 
-    @Column(name = "status")
+    @Column(name = "user_status")
     @Enumerated(EnumType.STRING)
     private SoftDeleteStatus status;
 
-    @Column(name = "role")
+    @Column(name = "user_role")
     @Enumerated(EnumType.STRING)
     private UserRole role;
 }
