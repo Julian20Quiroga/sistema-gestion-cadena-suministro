@@ -17,8 +17,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserAdapterPersistence implements UserRepository {
 
-    private UserDAO userDAO;
-    private UserPersistenceMapper mapper;
+    private final UserDAO userDAO;
+    private final UserPersistenceMapper mapper;
 
     @Override
     public User findByUsername(String username) {
@@ -27,6 +27,13 @@ public class UserAdapterPersistence implements UserRepository {
             throw new UsernameNotFoundException("El usuario " + username + " no fue encontrado.");
         }
         return mapper.toDomain(userFound.get());
+    }
+
+    @Override
+    public User save(User user, String passwordEncripted) {
+        UserEntity userEntity = mapper.toEntity(user);
+        userEntity.setPasswordHash(passwordEncripted);
+        return mapper.toDomain(userDAO.save(userEntity));
     }
 
 }
