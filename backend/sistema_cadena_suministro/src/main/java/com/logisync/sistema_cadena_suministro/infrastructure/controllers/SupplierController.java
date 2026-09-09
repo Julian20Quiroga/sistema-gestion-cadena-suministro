@@ -8,6 +8,7 @@ import com.logisync.sistema_cadena_suministro.infrastructure.controllers.mappers
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,8 +22,9 @@ public class SupplierController {
     private final SupplierRestMapper supplierRestMapper;
     private final CreateSupplierUseCase createSupplierUseCase;
 
+    @PreAuthorize("hasRole('PRESIDENT')")
     @PostMapping
-    public ResponseEntity<SupplierResponse> create(@RequestBody CreateSupplierRequest request){
+    public ResponseEntity<SupplierResponse> create(@RequestBody CreateSupplierRequest request) {
         CreateSupplierCommand command = supplierRestMapper.toCommand(request);
         SupplierResponse response = supplierRestMapper.toResponse(createSupplierUseCase.create(command));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
