@@ -37,4 +37,9 @@ public class SupplierAdapterPersistence implements SupplierRepository {
 
         return mapper.toDomain(supplierDAO.save(existingSupplier));
     }
+
+    @Override
+    public void delete(Integer id) {
+        supplierDAO.deleteById(id);
+    }
 }
