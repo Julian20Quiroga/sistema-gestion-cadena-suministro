@@ -6,4 +6,5 @@ public interface UserRepository {
 
     User findByUsername(String username);
     User save(User user, String passwordEncripted);
+    
 }

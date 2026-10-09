@@ -7,6 +7,7 @@ import com.logisync.sistema_cadena_suministro.infrastructure.persistence.Supplie
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.entities.SupplierEntity;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.mappers.SupplierPersistenceMapper;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,5 +22,19 @@ public class SupplierAdapterPersistence implements SupplierRepository {
         SupplierEntity supplierEntity = mapper.toEntity(supplier);
         supplierEntity.setStatus(SoftDeleteStatus.ACTIVE);
         return mapper.toDomain(supplierDAO.save(supplierEntity));
+    }
+
+    @Override
+    public Supplier update(Supplier supplier, Integer id) {
+        SupplierEntity existingSupplier = supplierDAO.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+        // Update the existing supplier with the new values
+        existingSupplier.setNit(supplier.getNit());
+        existingSupplier.setName(supplier.getName());
+        existingSupplier.setEmail(supplier.getEmail());
+        existingSupplier.setPhone(supplier.getPhone());
+        existingSupplier.setStatus(supplier.getStatus());
+
+        return mapper.toDomain(supplierDAO.save(existingSupplier));
     }
 }
