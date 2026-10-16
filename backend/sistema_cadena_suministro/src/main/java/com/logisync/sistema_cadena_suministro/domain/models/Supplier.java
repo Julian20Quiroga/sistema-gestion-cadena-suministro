@@ -43,4 +43,8 @@ public class Supplier {
         return email;
     }
 
+    public boolean isActive() {
+        return status == SoftDeleteStatus.ACTIVE;
+    }
+
 }

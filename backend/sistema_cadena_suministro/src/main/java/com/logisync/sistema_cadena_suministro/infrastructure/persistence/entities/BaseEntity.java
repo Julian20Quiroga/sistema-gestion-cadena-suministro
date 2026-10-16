@@ -2,7 +2,6 @@ package com.logisync.sistema_cadena_suministro.infrastructure.persistence.entiti
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -16,7 +15,6 @@ import java.time.LocalDateTime;
 @EnableJpaAuditing
 @Getter
 @Setter
-@RequiredArgsConstructor
 public abstract class BaseEntity {
 
     @Id
