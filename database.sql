@@ -31,6 +31,8 @@ CREATE TABLE warehouses (
     phone VARCHAR(20) NOT NULL unique,
     warehouse_status ENUM('ACTIVE', 'DELETED') NOT NULL,
     headquarter_id INT NOT NULL,
+    latitude DECIMAL(9,6) NULL,
+    longitude DECIMAL(9,6) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
@@ -77,12 +79,17 @@ CREATE TABLE storage_spaces (
     warehouse_id INT NOT NULL,
     capacity INT NOT NULL,
     storage_space_status ENUM('ACTIVE', 'DELETED') NOT NULL,
+    parent_id INT NULL,
+    space_type ENUM('ZONE', 'RACK', 'LOCATION') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_storage_spaces_warehouse
         FOREIGN KEY (warehouse_id)
-        REFERENCES warehouses(id)
+        REFERENCES warehouses(id),
+    CONSTRAINT fk_storage_spaces_parent
+        FOREIGN KEY (parent_id)
+        REFERENCES storage_spaces(id)
 );
 CREATE TABLE inventory (
     id INT AUTO_INCREMENT PRIMARY KEY,
