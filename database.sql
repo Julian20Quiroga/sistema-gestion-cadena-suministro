@@ -97,9 +97,11 @@ CREATE TABLE inventory (
     reserved_quantity INT NOT NULL,
     storage_space_id INT NOT NULL,
     product_id INT NOT NULL,
+    version INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uq_inventory_space_product UNIQUE (storage_space_id, product_id),
     CONSTRAINT fk_inventory_storage_space
         FOREIGN KEY (storage_space_id)
         REFERENCES storage_spaces(id),
@@ -109,8 +111,11 @@ CREATE TABLE inventory (
 );
 CREATE TABLE inventory_movements (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    movement_type ENUM('ENTRADA', 'SALIDA') NOT NULL,
+    movement_type ENUM('ENTRADA', 'SALIDA', 'AJUSTE', 'TRASLADO') NOT NULL,
     movement_date TIMESTAMP NOT NULL,
+    reason VARCHAR(255) NULL,
+    reference VARCHAR(100) NULL,
+    movement_status ENUM('APPLIED', 'REVERSED') NOT NULL DEFAULT 'APPLIED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
@@ -118,6 +123,7 @@ CREATE TABLE inventory_movements (
 CREATE TABLE detail_inventory_movements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     quantity INT NOT NULL,
+    reserved_delta INT NOT NULL DEFAULT 0,
     inventory_movement_id INT NOT NULL,
     inventory_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
