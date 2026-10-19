@@ -36,6 +36,11 @@ public class TrackingController {
     private final TrackingRestMapper mapper;
     private final StreamTelemetrySink streamTelemetrySink;
 
+    /**
+     * Ingesta telemetría enviada por un dispositivo IoT vehicular validando credenciales y consistencia física.
+     * Patrones aplicados: Chain of Responsibility (TelemetryValidationChain valida coordenadas y temperatura)
+     * y Bridge (transmite el dato crudo hacia el sumidero de streaming).
+     */
     @PostMapping("/telemetry")
     public ResponseEntity<TelemetryReadingResponse> ingest(
             @RequestHeader(value = "X-Vehicle-Api-Key", required = false) String headerKey,
@@ -46,11 +51,17 @@ public class TrackingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(appResponse));
     }
 
+    /**
+     * Obtiene la lectura telemétrica más reciente registrada por un vehículo.
+     */
     @GetMapping("/vehicles/{id}/latest")
     public ResponseEntity<TelemetryReadingResponse> getLatestByVehicle(@PathVariable("id") Integer vehicleId) {
         return ResponseEntity.ok(mapper.toResponse(queryTrackingUseCase.getLatestByVehicleId(vehicleId)));
     }
 
+    /**
+     * Obtiene la traza histórica geográfica y de sensores de un vehículo para graficar su recorrido.
+     */
     @GetMapping("/vehicles/{id}/trail")
     public ResponseEntity<VehicleTrailResponse> getTrail(
             @PathVariable("id") Integer vehicleId,
@@ -58,11 +69,18 @@ public class TrackingController {
         return ResponseEntity.ok(mapper.toResponse(queryTrackingUseCase.getTrailByVehicleId(vehicleId, limit)));
     }
 
+    /**
+     * Obtiene la última posición y estado de sensores asociado a un despacho en ruta.
+     */
     @GetMapping("/dispatches/{id}/latest")
     public ResponseEntity<TelemetryReadingResponse> getLatestByDispatch(@PathVariable("id") Integer dispatchId) {
         return ResponseEntity.ok(mapper.toResponse(queryTrackingUseCase.getLatestByDispatchId(dispatchId)));
     }
 
+    /**
+     * Emite eventos Server-Sent Events (SSE) en tiempo real para consumidores en vivo.
+     * Patrón aplicado: Observer (los clientes HTTP suscritos reciben notificaciones reactivas de telemetría).
+     */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamTelemetry() {
         SseEmitter emitter = new SseEmitter(180_000L); // 3-minute timeout

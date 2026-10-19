@@ -32,6 +32,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
 
+/**
+ * Servicio de aplicación para la ingesta y consulta de telemetría IoT en tiempo real.
+ * Implementa los patrones:
+ * - Chain of Responsibility: Cadena de validación secuencial para datos GPS y velocidad.
+ * - Bridge: Desacopla la publicación de telemetría (Estándar vs Urgente) de los canales receptores (Sinks).
+ */
 @Service
 @RequiredArgsConstructor
 public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUseCase {
@@ -43,6 +49,13 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
 
     private final TelemetryValidationChain validationChain = new TelemetryValidationChain();
 
+    /**
+     * Ingesta una lectura de telemetría GPS enviada por un dispositivo vehicular con API Key.
+     * Patrones aplicados:
+     * - Chain of Responsibility: Valida estado del vehículo, rango de coordenadas y umbral de velocidad.
+     * - Bridge: Envía la lectura como UrgentAlertTelemetryPublication (>100 km/h) o StandardTelemetryPublication
+     *   hacia múltiples destinos desacoplados (SSE, logging, métricas).
+     */
     @Override
     @Transactional
     public TelemetryReadingAppResponse ingest(String apiKey, IngestTelemetryCommand command) {
@@ -53,12 +66,12 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         Vehicle vehicle = vehicleRepository.findByApiKeyHash(keyHash)
                 .orElseThrow(() -> new UnauthorizedException("Invalid vehicle API key"));
 
-        // Validate via Chain of Responsibility
+        // Validar telemetría mediante la cadena de responsabilidad
         validationChain.execute(command, vehicle);
 
-        LocalDateTime recordedAt = command.recordedAt().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        LocalDateTime recordedAt = command.recordedAt().truncatedTo(ChronoUnit.SECONDS);
 
-        // Idempotency check
+        // Control de idempotencia
         if (telemetryRepository.existsByVehicleIdAndRecordedAt(vehicle.getId(), recordedAt)) {
             throw new ConflictException("Telemetry reading already recorded for vehicle " + vehicle.getId() + " at " + recordedAt);
         }
@@ -74,7 +87,7 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         );
         TelemetryReading saved = telemetryRepository.save(reading);
 
-        // Bridge Pattern: Publish to sinks (Standard vs Urgent based on speed threshold)
+        // Patrón Bridge: Publicación hacia los canales receptores desacoplados
         TelemetryData telemetryData = new TelemetryData(
                 "VEHICLE-" + vehicle.getId(),
                 command.latitude(),
@@ -93,6 +106,9 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         return toAppResponse(saved, vehicle.getPlate());
     }
 
+    /**
+     * Obtiene la lectura de telemetría más reciente registrada para un vehículo específico.
+     */
     @Override
     @Transactional(readOnly = true)
     public TelemetryReadingAppResponse getLatestByVehicleId(Integer vehicleId) {
@@ -103,6 +119,9 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         return toAppResponse(latest, vehicle.getPlate());
     }
 
+    /**
+     * Obtiene la lectura de telemetría más reciente asociada al vehículo asignado a un despacho.
+     */
     @Override
     @Transactional(readOnly = true)
     public TelemetryReadingAppResponse getLatestByDispatchId(Integer dispatchId) {
@@ -114,6 +133,9 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         return getLatestByVehicleId(dispatch.getVehicleId());
     }
 
+    /**
+     * Consulta el histórico reciente de posiciones del vehículo y genera la ruta en formato GeoJSON LineString.
+     */
     @Override
     @Transactional(readOnly = true)
     public VehicleTrailAppResponse getTrailByVehicleId(Integer vehicleId, int limit) {
@@ -143,6 +165,9 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         return new VehicleTrailAppResponse(vehicle.getId(), vehicle.getPlate(), geoJson, mapped);
     }
 
+    /**
+     * Transforma una entidad de lectura de telemetría en el DTO de respuesta de la aplicación.
+     */
     private TelemetryReadingAppResponse toAppResponse(TelemetryReading r, String plate) {
         return new TelemetryReadingAppResponse(
                 r.getId(),
@@ -156,6 +181,9 @@ public class TrackingService implements IngestTelemetryUseCase, QueryTrackingUse
         );
     }
 
+    /**
+     * Calcula el hash criptográfico SHA-256 de una clave API en texto plano.
+     */
     private String hashKey(String raw) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

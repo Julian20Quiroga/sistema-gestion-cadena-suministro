@@ -39,6 +39,9 @@ public class VehicleController {
     private final OptimizeRouteUseCase optimizeRouteUseCase;
     private final VehicleRestMapper mapper;
 
+    /**
+     * Registra un nuevo vehículo en la flota y genera su API Key segura para comunicación IoT.
+     */
     @PostMapping
     @PreAuthorize("hasRole('PRESIDENT')")
     @Operation(summary = "Register vehicle and issue IoT device API key")
@@ -47,6 +50,9 @@ public class VehicleController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(res));
     }
 
+    /**
+     * Rota de forma segura la clave de autenticación del dispositivo de telemetría IoT del vehículo.
+     */
     @PostMapping("/{id}/rotate-api-key")
     @PreAuthorize("hasRole('PRESIDENT')")
     @Operation(summary = "Rotate IoT vehicle API key")
@@ -55,6 +61,9 @@ public class VehicleController {
         return ResponseEntity.ok(mapper.toResponse(res));
     }
 
+    /**
+     * Consulta los detalles de un vehículo particular por su ID único.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Find vehicle by ID")
@@ -63,6 +72,9 @@ public class VehicleController {
         return ResponseEntity.ok(mapper.toResponse(res));
     }
 
+    /**
+     * Consulta con paginación y filtros de placa o estado de la flota vehicular.
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Search vehicles with pagination")
@@ -76,6 +88,11 @@ public class VehicleController {
                 mapper::toResponse));
     }
 
+    /**
+     * Calcula la ruta óptima de distribución recorriendo las paradas de entrega.
+     * Patrones aplicados: Strategy (RouteOptimizationStrategy selecciona heurística según paradas),
+     * Proxy (CachedRouteCalculationProxy cachea cálculos de ruta) e Iterator (RouteStopIterator itera paradas).
+     */
     @PostMapping("/optimize-route")
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Calculate optimal delivery route for order stops")

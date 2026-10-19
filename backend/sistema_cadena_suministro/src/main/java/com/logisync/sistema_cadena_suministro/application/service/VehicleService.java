@@ -37,6 +37,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servicio de aplicación para la gestión de flota vehicular y cálculo de rutas óptimas.
+ * Implementa el patrón Strategy para la selección dinámica del algoritmo de optimización de rutas.
+ */
 @Service
 @RequiredArgsConstructor
 public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKeyUseCase,
@@ -49,6 +53,9 @@ public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKey
     private final RouteStrategyResolver strategyResolver;
     private final VehicleApplicationMapper mapper;
 
+    /**
+     * Registra un nuevo vehículo generando de forma segura su API Key vehicular con hash SHA-256.
+     */
     @Override
     @Transactional
     public VehicleAppResponse create(CreateVehicleCommand command) {
@@ -71,6 +78,9 @@ public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKey
         return mapper.toResponseWithKey(saved, rawApiKey);
     }
 
+    /**
+     * Rota la clave API del vehículo generando un nuevo hash y retornando la clave en texto plano una sola vez.
+     */
     @Override
     @Transactional
     public VehicleAppResponse rotateApiKey(Integer vehicleId) {
@@ -82,6 +92,9 @@ public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKey
         return mapper.toResponseWithKey(saved, rawApiKey);
     }
 
+    /**
+     * Consulta los datos de un vehículo por su identificador primario.
+     */
     @Override
     @Transactional(readOnly = true)
     public VehicleAppResponse findById(Integer id) {
@@ -90,12 +103,20 @@ public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKey
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle", id));
     }
 
+    /**
+     * Lista los vehículos de la flota con paginación y filtros opcionales por placa y estado.
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResult<VehicleAppResponse> findAll(String plate, SoftDeleteStatus status, PageQuery pageQuery) {
         return vehicleRepository.findAll(plate, status, pageQuery).map(mapper::toResponse);
     }
 
+    /**
+     * Calcula la secuencia óptima de paradas de entrega desde el almacén hacia los domicilios de las órdenes.
+     * Patrón aplicado: Strategy (resuelve y ejecuta la estrategia algorítmica solicitada:
+     * SHORTEST_DISTANCE mediante fórmula Haversine, FASTEST_TIME o BALANCED).
+     */
     @Override
     @Transactional(readOnly = true)
     public OptimizedRouteAppResponse optimizeRoute(OptimizeRouteCommand command) {
@@ -133,6 +154,7 @@ public class VehicleService implements CreateVehicleUseCase, RotateVehicleApiKey
             ));
         }
 
+        // Patrón Strategy
         RouteOptimizationStrategy strategy = strategyResolver.resolve(command.strategyName());
         OptimizedRoute route = strategy.optimize(new RouteOptimizationContext(origin, destinations, vehicle));
         return mapper.toRouteResponse(route);

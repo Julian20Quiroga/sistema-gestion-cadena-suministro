@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+/**
+ * Servicio de aplicación para consultas especializadas de balances de stock, disponibilidad y rotación.
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryQueryService implements QueryInventoryUseCase {
@@ -31,6 +34,9 @@ public class InventoryQueryService implements QueryInventoryUseCase {
     private final InventoryApplicationMapper mapper;
     private final Clock clock;
 
+    /**
+     * Consulta los niveles de inventario desglosados por producto, almacén o espacio de almacenamiento específico.
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResult<InventoryLevelAppResponse> findLevels(Integer productId, Integer warehouseId,
@@ -38,6 +44,10 @@ public class InventoryQueryService implements QueryInventoryUseCase {
         return inventoryRepository.search(productId, warehouseId, storageSpaceId, pageQuery).map(mapper::toResponse);
     }
 
+    /**
+     * Calcula la disponibilidad global consolidada de un producto (físico, reservado y disponible neto)
+     * e indica si se encuentra por debajo del punto de reorden.
+     */
     @Override
     @Transactional(readOnly = true)
     public ProductAvailabilityAppResponse availability(Integer productId) {
@@ -48,7 +58,10 @@ public class InventoryQueryService implements QueryInventoryUseCase {
                 totals.available(), reorderPoint, reorderPoint > 0 && totals.available() <= reorderPoint);
     }
 
-    /** Rotation index: units exited in the period divided by the current physical stock (minimum 1). */
+    /**
+     * Calcula el índice de rotación de un producto en un período de días determinado
+     * (unidades despachadas divididas entre el stock físico actual).
+     */
     @Override
     @Transactional(readOnly = true)
     public ProductRotationAppResponse rotation(Integer productId, int days) {
@@ -62,6 +75,9 @@ public class InventoryQueryService implements QueryInventoryUseCase {
         return new ProductRotationAppResponse(productId, days, exited, physical, index);
     }
 
+    /**
+     * Valida la existencia del producto en el catálogo.
+     */
     private Product requireProduct(Integer productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", productId));

@@ -4,7 +4,9 @@ import com.logisync.sistema_cadena_suministro.application.commands.IngestTelemet
 import com.logisync.sistema_cadena_suministro.domain.models.Vehicle;
 
 /**
- * Chain of Responsibility: Builder and executor of the telemetry validation pipeline.
+ * Orquestador de la cadena de validación de telemetría IoT vehicular.
+ * Patrón aplicado: Chain of Responsibility (ensambla y ejecuta secuencialmente los manejadores
+ * de validación: coordenadas GPS válidas -> timestamp no futuro -> umbrales físicos de velocidad).
  */
 public class TelemetryValidationChain {
 
@@ -19,6 +21,10 @@ public class TelemetryValidationChain {
         this.head = coordinatesValidator;
     }
 
+    /**
+     * Ejecuta secuencialmente la cadena de validadores sobre la lectura de telemetría recibida.
+     * Patrón aplicado: Chain of Responsibility (inicia la validación en la cabeza de la cadena).
+     */
     public void execute(IngestTelemetryCommand command, Vehicle vehicle) {
         head.validate(command, vehicle);
     }

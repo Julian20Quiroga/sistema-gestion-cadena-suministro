@@ -49,18 +49,30 @@ public class InventoryController {
     private final QueryInventoryUseCase queryInventoryUseCase;
     private final QueryMovementUseCase queryMovementUseCase;
 
+    /**
+     * Registra una entrada formal de stock a una bodega y espacio de almacenamiento específico.
+     * Patrón aplicado: Command (encapsula la solicitud de movimiento como comando ejecutable).
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @PostMapping("/entries")
     public ResponseEntity<MovementResponse> entry(@Valid @RequestBody RegisterEntryRequest request) {
         return created(restMapper.toResponse(registerEntryUseCase.registerEntry(restMapper.toCommand(request))));
     }
 
+    /**
+     * Registra una salida de mercancía descontando existencias e invocando al monitor de stock mínimo.
+     * Patrones aplicados: Command (ejecución de movimiento) y Observer (notificación de bajo stock).
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @PostMapping("/exits")
     public ResponseEntity<MovementResponse> exit(@Valid @RequestBody RegisterExitRequest request) {
         return created(restMapper.toResponse(registerExitUseCase.registerExit(restMapper.toCommand(request))));
     }
 
+    /**
+     * Registra un ajuste de inventario manual (positivo o negativo) por mermas, conteos o auditoría.
+     * Patrón aplicado: Command (encapsula la mutación transaccional reversible de stock).
+     */
     @PreAuthorize("hasRole('PRESIDENT')")
     @PostMapping("/adjustments")
     public ResponseEntity<MovementResponse> adjustment(@Valid @RequestBody RegisterAdjustmentRequest request) {
@@ -68,6 +80,10 @@ public class InventoryController {
                 registerAdjustmentUseCase.registerAdjustment(restMapper.toCommand(request))));
     }
 
+    /**
+     * Transfiere existencias entre distintos espacios o bodegas garantizando consistencia bidireccional.
+     * Patrón aplicado: Command (ejecuta par de movimientos debit/credit atómico).
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @PostMapping("/transfers")
     public ResponseEntity<MovementResponse> transfer(@Valid @RequestBody RegisterTransferRequest request) {
@@ -75,12 +91,19 @@ public class InventoryController {
                 registerTransferUseCase.registerTransfer(restMapper.toCommand(request))));
     }
 
+    /**
+     * Deshace un movimiento de stock previamente registrado aplicando su operación matemática inversa.
+     * Patrón aplicado: Command (aplica el método undo() del comando correspondiente para revertir el estado).
+     */
     @PreAuthorize("hasRole('PRESIDENT')")
     @PostMapping("/movements/{id}/undo")
     public ResponseEntity<MovementResponse> undo(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(restMapper.toResponse(undoMovementUseCase.undo(id)));
     }
 
+    /**
+     * Consulta los niveles de stock paginados con filtros opcionales de producto, bodega y espacio.
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/levels")
     public ResponseEntity<PageResponse<InventoryLevelResponse>> levels(
@@ -94,12 +117,18 @@ public class InventoryController {
                 restMapper::toResponse));
     }
 
+    /**
+     * Obtiene el desglose consolidado de disponibilidad física, reservada y neta de un producto.
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/products/{productId}/availability")
     public ResponseEntity<ProductAvailabilityResponse> availability(@PathVariable("productId") Integer productId) {
         return ResponseEntity.ok(restMapper.toResponse(queryInventoryUseCase.availability(productId)));
     }
 
+    /**
+     * Calcula la tasa de rotación de inventario para un producto en una ventana temporal dada en días.
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/products/{productId}/rotation")
     public ResponseEntity<ProductRotationResponse> rotation(@PathVariable("productId") Integer productId,
@@ -107,6 +136,9 @@ public class InventoryController {
         return ResponseEntity.ok(restMapper.toResponse(queryInventoryUseCase.rotation(productId, days)));
     }
 
+    /**
+     * Consulta el historial auditable de movimientos de almacén aplicando filtros y paginación.
+     */
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/movements")
     public ResponseEntity<PageResponse<MovementResponse>> movements(

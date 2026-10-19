@@ -27,6 +27,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Servicio de aplicación para la gestión del catálogo maestro de productos.
+ * Orquesta la creación, actualización, borrado lógico y consultas dinámicas con filtros JPA.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductService
@@ -37,6 +41,9 @@ public class ProductService
     private final SupplierRepository supplierRepository;
     private final CategoryRepository categoryRepository;
 
+    /**
+     * Registra un nuevo producto verificando la unicidad del SKU y la validez del proveedor y categorías.
+     */
     @Override
     @Transactional
     public ProductAppResponse create(CreateProductCommand command) {
@@ -49,6 +56,9 @@ public class ProductService
         return mapper.toResponse(productRepository.create(product));
     }
 
+    /**
+     * Actualiza los datos de un producto existente validando colisiones de SKU y estado del proveedor.
+     */
     @Override
     @Transactional
     public ProductAppResponse update(UpdateProductCommand command, Integer id) {
@@ -62,12 +72,18 @@ public class ProductService
         return mapper.toResponse(productRepository.update(product, id));
     }
 
+    /**
+     * Aplica el borrado lógico del producto en la base de datos.
+     */
     @Override
     @Transactional
     public void delete(Integer id) {
         productRepository.delete(id);
     }
 
+    /**
+     * Consulta un producto por su identificador único.
+     */
     @Override
     @Transactional(readOnly = true)
     public ProductAppResponse findById(Integer id) {
@@ -76,12 +92,18 @@ public class ProductService
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
     }
 
+    /**
+     * Lista productos de forma paginada admitiendo filtros dinámicos por nombre, SKU y categoría.
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResult<ProductAppResponse> findAll(ProductFilter filter, PageQuery pageQuery) {
         return productRepository.findAll(filter, pageQuery).map(mapper::toResponse);
     }
 
+    /**
+     * Valida que el proveedor asignado al producto exista y se encuentre en estado activo.
+     */
     private void requireActiveSupplier(Integer supplierId) {
         boolean active = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", supplierId))
@@ -91,6 +113,9 @@ public class ProductService
         }
     }
 
+    /**
+     * Resuelve y valida la existencia de todas las categorías asociadas al producto.
+     */
     private List<Category> resolveCategories(Collection<Integer> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return List.of();

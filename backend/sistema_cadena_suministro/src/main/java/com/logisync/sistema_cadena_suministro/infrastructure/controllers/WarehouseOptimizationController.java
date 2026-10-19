@@ -30,6 +30,10 @@ public class WarehouseOptimizationController {
     private final ManageLayoutSnapshotUseCase manageLayoutSnapshotUseCase;
     private final StorageOptimizationRestMapper mapper;
 
+    /**
+     * Ejecuta el análisis de reubicación y optimización de espacios de almacenamiento en la bodega.
+     * Patrones aplicados: Visitor (RelocationProposalVisitor recorre espacios) y Memento (crea snapshot de respaldo previo).
+     */
     @PostMapping("/optimize-layout")
     public ResponseEntity<LayoutOptimizationResponse> optimizeLayout(
             @PathVariable("id") Integer warehouseId,
@@ -38,6 +42,10 @@ public class WarehouseOptimizationController {
         return ResponseEntity.ok(mapper.toResponse(appResp));
     }
 
+    /**
+     * Crea un punto de restauración o captura de la distribución física actual de la bodega.
+     * Patrón aplicado: Memento (WarehouseLayoutOriginator genera un StorageLayoutMemento serializado).
+     */
     @PostMapping("/snapshots")
     public ResponseEntity<LayoutSnapshotResponse> createSnapshot(
             @PathVariable("id") Integer warehouseId,
@@ -48,6 +56,9 @@ public class WarehouseOptimizationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(appResp));
     }
 
+    /**
+     * Lista todos los snapshots o puntos de restauración históricos registrados para la bodega.
+     */
     @GetMapping("/snapshots")
     public ResponseEntity<List<LayoutSnapshotResponse>> listSnapshots(@PathVariable("id") Integer warehouseId) {
         var list = manageLayoutSnapshotUseCase.listSnapshots(warehouseId).stream()
@@ -56,6 +67,10 @@ public class WarehouseOptimizationController {
         return ResponseEntity.ok(list);
     }
 
+    /**
+     * Restaura la configuración jerárquica y capacidades de la bodega a un estado previo guardado.
+     * Patrón aplicado: Memento (restaura el layout estructural a partir del snapshot seleccionado).
+     */
     @PostMapping("/snapshots/{snapshotId}/restore")
     public ResponseEntity<LayoutSnapshotResponse> restoreSnapshot(
             @PathVariable("id") Integer warehouseId,

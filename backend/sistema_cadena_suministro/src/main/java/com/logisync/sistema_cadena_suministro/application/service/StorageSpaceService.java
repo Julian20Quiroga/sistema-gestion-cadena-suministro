@@ -27,6 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Servicio de aplicación para la gestión de espacios jerárquicos de almacenamiento en almacenes.
+ * Implementa los patrones:
+ * - Composite: Estructuración multinivel uniforme (Zonas, Pasillos, Racks, Bahías).
+ * - Visitor: Recorridos de auditoría estructural y localización de bahías libres.
+ */
 @Service
 @RequiredArgsConstructor
 public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateStorageSpaceUseCase,
@@ -37,6 +43,10 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
     private final StorageSpaceRepository storageSpaceRepository;
     private final StoredItemsReader storedItemsReader;
 
+    /**
+     * Registra un nuevo espacio físico (Zona, Rack o Bahía) anidándolo a su espacio contenedor si aplica.
+     * Patrón aplicado: Composite (creación de nodos hoja o compuestos en la jerarquía).
+     */
     @Override
     @Transactional
     public StorageSpaceAppResponse create(Integer warehouseId, CreateStorageSpaceCommand command) {
@@ -47,6 +57,9 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
         return mapper.toResponse(storageSpaceRepository.create(space));
     }
 
+    /**
+     * Modifica el nombre o capacidad volumétrica de un espacio de almacenamiento.
+     */
     @Override
     @Transactional
     public StorageSpaceAppResponse update(Integer warehouseId, Integer spaceId, UpdateStorageSpaceCommand command) {
@@ -55,6 +68,9 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
         return mapper.toResponse(storageSpaceRepository.update(space));
     }
 
+    /**
+     * Elimina un espacio de almacenamiento comprobando que no contenga sub-espacios activos ni stock retenido.
+     */
     @Override
     @Transactional
     public void delete(Integer warehouseId, Integer spaceId) {
@@ -68,12 +84,20 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
         storageSpaceRepository.delete(spaceId);
     }
 
+    /**
+     * Obtiene la vista estructurada en árbol del almacén calculando capacidades totales recursivamente.
+     * Patrones aplicados: Composite (estructura en árbol) y Visitor (StructureViewVisitor).
+     */
     @Override
     @Transactional(readOnly = true)
     public StorageNodeAppResponse structure(Integer warehouseId) {
         return mapper.toResponse(loadTree(warehouseId).accept(new StructureViewVisitor()));
     }
 
+    /**
+     * Localiza bahías de almacenamiento con capacidad disponible igual o superior a las unidades solicitadas.
+     * Patrón aplicado: Visitor (FreeLocationVisitor busca y filtra ubicaciones libres en el árbol).
+     */
     @Override
     @Transactional(readOnly = true)
     public List<FreeLocationAppResponse> freeLocations(Integer warehouseId, long minFreeUnits) {
@@ -81,12 +105,18 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
                 .map(mapper::toResponse).toList();
     }
 
+    /**
+     * Carga y ensambla el árbol Composite del almacén junto con los balances de inventario actuales.
+     */
     private WarehouseNode loadTree(Integer warehouseId) {
         Warehouse warehouse = requireActiveWarehouse(warehouseId);
         return StorageTreeAssembler.assemble(warehouse, storageSpaceRepository.findActiveByWarehouse(warehouseId),
                 storedItemsReader.itemsBySpace(warehouseId));
     }
 
+    /**
+     * Valida que el almacén exista y se encuentre en estado activo.
+     */
     private Warehouse requireActiveWarehouse(Integer warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse", warehouseId));
@@ -96,6 +126,9 @@ public class StorageSpaceService implements CreateStorageSpaceUseCase, UpdateSto
         return warehouse;
     }
 
+    /**
+     * Valida que el espacio físico exista y pertenezca al almacén indicado.
+     */
     private StorageSpace requireSpace(Integer warehouseId, Integer spaceId) {
         return storageSpaceRepository.findById(spaceId)
                 .filter(s -> s.isActive() && s.getWarehouseId().equals(warehouseId))

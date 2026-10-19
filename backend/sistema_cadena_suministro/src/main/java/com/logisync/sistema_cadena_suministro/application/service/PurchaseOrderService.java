@@ -39,6 +39,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Servicio de aplicación para la gestión del aprovisionamiento y órdenes de compra.
+ * Implementa los patrones:
+ * - Chain of Responsibility: Validación secuencial de proveedor activo, almacén activo y pertenencia de productos.
+ * - State: Control de transiciones de la orden de compra (DRAFT -> ORDERED -> RECEIVED / CANCELLED).
+ * - Mediator: Desacoplamiento de eventos cruzados hacia el mediador de la cadena de suministro.
+ */
 @Service
 @RequiredArgsConstructor
 public class PurchaseOrderService implements CreatePurchaseOrderUseCase, ReceivePurchaseOrderUseCase,
@@ -53,6 +60,12 @@ public class PurchaseOrderService implements CreatePurchaseOrderUseCase, Receive
     private final PurchaseOrderApplicationMapper mapper;
     private final Clock clock;
 
+    /**
+     * Registra una nueva orden de compra validando reglas comerciales mediante la cadena de responsabilidad.
+     * Patrones aplicados:
+     * - Chain of Responsibility: Enlaza SupplierActiveValidator -> WarehouseActiveValidator -> ProductBelongsToSupplierValidator.
+     * - Mediator: Emite notifyPurchaseOrderCreated al mediador central.
+     */
     @Override
     @Transactional
     public PurchaseOrderAppResponse create(CreatePurchaseOrderCommand command) {
@@ -89,6 +102,10 @@ public class PurchaseOrderService implements CreatePurchaseOrderUseCase, Receive
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Procesa la recepción física de mercancía comprada, ingresando stock a bodega y actualizando el estado de la orden.
+     * Patrón aplicado: State (transición hacia RECEIVED o PARTIALLY_RECEIVED según cantidades).
+     */
     @Override
     @Transactional
     public PurchaseOrderAppResponse receive(ReceivePurchaseOrderCommand command) {
@@ -96,6 +113,10 @@ public class PurchaseOrderService implements CreatePurchaseOrderUseCase, Receive
         return mapper.toResponse(received);
     }
 
+    /**
+     * Cancela la orden de compra si su estado actual lo permite.
+     * Patrón aplicado: State (valida si la orden puede pasar a CANCELLED).
+     */
     @Override
     @Transactional
     public PurchaseOrderAppResponse cancel(Integer purchaseOrderId) {
@@ -105,6 +126,9 @@ public class PurchaseOrderService implements CreatePurchaseOrderUseCase, Receive
         return mapper.toResponse(purchaseOrderRepository.save(order));
     }
 
+    /**
+     * Consulta una orden de compra por su identificador primario.
+     */
     @Override
     @Transactional(readOnly = true)
     public PurchaseOrderAppResponse findById(Integer id) {
@@ -113,6 +137,9 @@ public class PurchaseOrderService implements CreatePurchaseOrderUseCase, Receive
                 .orElseThrow(() -> new ResourceNotFoundException("PurchaseOrder", id));
     }
 
+    /**
+     * Lista órdenes de compra con paginación y filtros por proveedor, almacén o estado.
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResult<PurchaseOrderAppResponse> findAll(Integer supplierId, Integer warehouseId,

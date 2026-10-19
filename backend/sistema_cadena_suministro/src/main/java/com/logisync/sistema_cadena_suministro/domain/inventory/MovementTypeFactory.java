@@ -4,7 +4,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Flyweight factory: serves one shared {@link MovementType} per code, created lazily and cached. */
+/**
+ * Fábrica Flyweight para descriptores de tipos de movimiento de inventario.
+ * Patrón aplicado: Flyweight (reutiliza y comparte una única instancia inmutable de MovementType
+ * por cada código ENTRADA, SALIDA, AJUSTE, TRASLADO mediante una caché en memoria concurrente,
+ * ahorrando memoria ante miles de transacciones de bodega).
+ */
 public final class MovementTypeFactory {
 
     private record Definition(String label, boolean requiresReason) {
@@ -26,15 +31,25 @@ public final class MovementTypeFactory {
     private MovementTypeFactory() {
     }
 
+    /**
+     * Retorna la instancia compartida (Flyweight) correspondiente al código solicitado.
+     * Patrón aplicado: Flyweight (búsqueda y retorno desde caché concurrente).
+     */
     public static MovementType of(String code) {
         String key = code == null ? "" : code.trim().toUpperCase(Locale.ROOT);
         return CACHE.computeIfAbsent(key, MovementTypeFactory::create);
     }
 
+    /**
+     * Retorna el número de instancias flyweight cacheadas en memoria.
+     */
     public static int cachedInstances() {
         return CACHE.size();
     }
 
+    /**
+     * Instancia de forma perezosa el descriptor del tipo de movimiento.
+     */
     private static MovementType create(String code) {
         Definition definition = DEFINITIONS.get(code);
         if (definition == null) {

@@ -12,11 +12,11 @@ import com.logisync.sistema_cadena_suministro.application.ports.driving.OrderRep
 import com.logisync.sistema_cadena_suministro.application.ports.driving.VehicleRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.WarehouseRepository;
 import com.logisync.sistema_cadena_suministro.application.responses.DispatchAppResponse;
+import com.logisync.sistema_cadena_suministro.application.responses.StockAllocationAppResponse;
 import com.logisync.sistema_cadena_suministro.domain.enums.OrderStatus;
 import com.logisync.sistema_cadena_suministro.domain.exceptions.BusinessRuleException;
 import com.logisync.sistema_cadena_suministro.domain.exceptions.ConflictException;
 import com.logisync.sistema_cadena_suministro.domain.exceptions.ResourceNotFoundException;
-import com.logisync.sistema_cadena_suministro.application.responses.StockAllocationAppResponse;
 import com.logisync.sistema_cadena_suministro.domain.models.DetailDispatch;
 import com.logisync.sistema_cadena_suministro.domain.models.Dispatch;
 import com.logisync.sistema_cadena_suministro.domain.models.Order;
@@ -31,7 +31,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Facade: Concrete orchestrator unifying dispatch creation, inventory reservation, and shipment.
+ * Orquestador principal de despachos y salidas de mercancía.
+ * Implementa los patrones:
+ * - Facade: Provee una interfaz unificada y simplificada que encapsula las operaciones complejas de
+ *   reserva de inventario, actualización de estados de pedidos, validación de flota y emisión de despachos.
+ * - State: Gestiona la máquina de estados del despacho (PENDING -> PACKED -> IN_TRANSIT -> DELIVERED).
  */
 @Component
 @RequiredArgsConstructor
@@ -47,6 +51,10 @@ public class DefaultDispatchFacade implements DispatchFacade {
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
     private final DispatchApplicationMapper mapper;
 
+    /**
+     * Orquesta la creación del despacho vinculando pedido, almacén, vehículo y reservando stock en bodega.
+     * Patrón aplicado: Facade (coordina subsistemas de órdenes, inventario y vehículos en una sola transacción).
+     */
     @Override
     @Transactional
     public DispatchAppResponse createDispatchWithStockReservation(CreateDispatchCommand command) {
@@ -82,7 +90,6 @@ public class DefaultDispatchFacade implements DispatchFacade {
 
         List<DetailDispatch> details = new ArrayList<>();
         for (OrderDetail line : order.getDetails()) {
-            // Reserve stock using best-fit single location in the selected warehouse
             StockAllocationAppResponse allocation = reserveStockUseCase.reserve(warehouse.getId(), line.getProductId(), line.getQuantity());
             details.add(new DetailDispatch(null, null, line.getId(), allocation.storageSpaceId(), allocation.inventoryId(), line.getQuantity()));
         }
@@ -93,6 +100,10 @@ public class DefaultDispatchFacade implements DispatchFacade {
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Inicia la fase de empaque del despacho en almacén.
+     * Patrón aplicado: State (transición de estado de PENDING a PACKED).
+     */
     @Override
     @Transactional
     public DispatchAppResponse startPreparation(Integer dispatchId) {
@@ -101,13 +112,17 @@ public class DefaultDispatchFacade implements DispatchFacade {
         return mapper.toResponse(dispatchRepository.save(dispatch));
     }
 
+    /**
+     * Marca el despacho como enviado, consumiendo definitivamente el stock previamente reservado.
+     * Patrones aplicados: Facade (coordina consumo de inventario y estado del pedido) y State (transición a IN_TRANSIT).
+     */
     @Override
     @Transactional
     public DispatchAppResponse shipAndConsumeStock(Integer dispatchId) {
         Dispatch dispatch = find(dispatchId);
         dispatch.startTransport();
 
-        // Consume reserved stock for each dispatch line
+        // Consumir el stock reservado para cada línea del despacho
         for (DetailDispatch d : dispatch.getDetails()) {
             consumeReservedStockUseCase.consume(new ConsumeReservationCommand(
                     d.getInventoryId(),
@@ -121,6 +136,10 @@ public class DefaultDispatchFacade implements DispatchFacade {
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Confirma la entrega exitosa de la mercancía en el destino final.
+     * Patrones aplicados: State (transición a DELIVERED) y Facade (sincroniza el pedido asociado).
+     */
     @Override
     @Transactional
     public DispatchAppResponse markDelivered(Integer dispatchId) {
@@ -131,13 +150,16 @@ public class DefaultDispatchFacade implements DispatchFacade {
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Cancela el despacho y libera las reservas de inventario regresándolas al stock disponible.
+     * Patrones aplicados: Facade (compensa reservas de bodega y cancela el pedido) y State (transición a FAILED).
+     */
     @Override
     @Transactional
     public DispatchAppResponse cancelAndReleaseStock(Integer dispatchId) {
         Dispatch dispatch = find(dispatchId);
         dispatch.cancel();
 
-        // Release reserved stock back to available pool
         for (DetailDispatch d : dispatch.getDetails()) {
             releaseStockUseCase.release(d.getInventoryId(), d.getQuantity());
         }
@@ -147,6 +169,9 @@ public class DefaultDispatchFacade implements DispatchFacade {
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Busca la entidad de despacho por su identificador primario o lanza excepción si no existe.
+     */
     private Dispatch find(Integer dispatchId) {
         return dispatchRepository.findById(dispatchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dispatch", dispatchId));

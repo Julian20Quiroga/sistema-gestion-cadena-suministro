@@ -28,6 +28,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servicio de aplicación para la proyección predictiva de demanda de inventario.
+ * Utiliza los patrones Strategy (algoritmos matemáticos) y Decorator (ajustes de temporada y seguridad).
+ */
 @Service
 @RequiredArgsConstructor
 public class DemandForecastService implements GenerateForecastUseCase {
@@ -36,6 +40,12 @@ public class DemandForecastService implements GenerateForecastUseCase {
     private final InventoryRepository inventoryRepository;
     private final SupplyNeedRepository supplyNeedRepository;
 
+    /**
+     * Genera proyecciones de demanda en lote para un producto específico o todo el catálogo.
+     * Patrón aplicado: Strategy (ejecuta el algoritmo de predicción seleccionado) y
+     * Decorator (añade colchón de seguridad y multiplicador estacional dinámicamente).
+     * Si se detecta déficit frente al stock actual, genera automáticamente una necesidad de abastecimiento.
+     */
     @Override
     @Transactional
     public ForecastBatchSummaryAppResponse generate(GenerateForecastCommand command) {
@@ -107,6 +117,10 @@ public class DemandForecastService implements GenerateForecastUseCase {
         return new ForecastBatchSummaryAppResponse(products.size(), supplyNeedsCreated, results);
     }
 
+    /**
+     * Consulta la previsión de demanda individual para un único producto y período especificado.
+     * Patrón aplicado: Strategy (ejecuta el algoritmo estadístico solicitado).
+     */
     @Override
     @Transactional(readOnly = true)
     public ProductForecastAppResponse getForecastForProduct(Integer productId, String algorithm, int periodsAhead) {
@@ -135,6 +149,10 @@ public class DemandForecastService implements GenerateForecastUseCase {
         );
     }
 
+    /**
+     * Ensambla en tiempo de ejecución la estrategia base y la envuelve con decoradores si aplica.
+     * Patrones aplicados: Factory Method (instancia la estrategia) y Decorator (envuelve con ajustes).
+     */
     private ForecastStrategy buildConfiguredStrategy(String algorithm, Double seasonal, Double safetyBuffer) {
         ForecastStrategy base = ForecastStrategyFactory.create(algorithm);
         ForecastStrategy current = base;
@@ -148,10 +166,11 @@ public class DemandForecastService implements GenerateForecastUseCase {
         return current;
     }
 
+    /**
+     * Construye la serie histórica de demanda de referencia para la estabilidad matemática del modelo.
+     */
     private List<HistoricalDataPoint> buildHistoricalDemand(Integer productId) {
-        // Collect product baseline demand data
         List<HistoricalDataPoint> history = new ArrayList<>();
-        // 4 baseline historical sales periods for mathematical stability
         history.add(new HistoricalDataPoint(1, 20.0));
         history.add(new HistoricalDataPoint(2, 25.0));
         history.add(new HistoricalDataPoint(3, 30.0));

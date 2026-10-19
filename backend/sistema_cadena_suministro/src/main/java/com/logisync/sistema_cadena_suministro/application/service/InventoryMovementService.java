@@ -38,6 +38,13 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio de aplicación para la ejecución y reversión de transacciones de inventario en bodega.
+ * Implementa los patrones:
+ * - Template Method: Delega a procesadores especializados que siguen el flujo fijo de validación, ejecución, persistencia y notificación.
+ * - Command: Permite la compensación atómica de movimientos mediante el método undo().
+ * - Observer: Notifica automáticamente al monitor de stock mínimo tras cada alteración de balance.
+ */
 @Service
 public class InventoryMovementService implements RegisterEntryUseCase, RegisterExitUseCase,
         RegisterAdjustmentUseCase, RegisterTransferUseCase, ConsumeReservedStockUseCase, UndoMovementUseCase,
@@ -74,36 +81,62 @@ public class InventoryMovementService implements RegisterEntryUseCase, RegisterE
         this.lowStockMonitor = lowStockMonitor;
     }
 
+    /**
+     * Registra una entrada física de mercancía al almacén.
+     * Patrón aplicado: Template Method (entryProcessor.process()).
+     */
     @Override
     @Transactional
     public MovementAppResponse registerEntry(RegisterEntryCommand command) {
         return mapper.toResponse(entryProcessor.process(command));
     }
 
+    /**
+     * Registra una salida de mercancía del almacén.
+     * Patrón aplicado: Template Method (exitProcessor.process()).
+     */
     @Override
     @Transactional
     public MovementAppResponse registerExit(RegisterExitCommand command) {
         return mapper.toResponse(exitProcessor.process(command));
     }
 
+    /**
+     * Registra un ajuste de inventario por diferencias físicas detectadas.
+     * Patrón aplicado: Template Method (adjustmentProcessor.process()).
+     */
     @Override
     @Transactional
     public MovementAppResponse registerAdjustment(RegisterAdjustmentCommand command) {
         return mapper.toResponse(adjustmentProcessor.process(command));
     }
 
+    /**
+     * Registra un traslado interno de stock entre bahías del mismo almacén.
+     * Patrón aplicado: Template Method (transferProcessor.process()).
+     */
     @Override
     @Transactional
     public MovementAppResponse registerTransfer(RegisterTransferCommand command) {
         return mapper.toResponse(transferProcessor.process(command));
     }
 
+    /**
+     * Consume inventario previamente reservado al momento del despacho de pedidos.
+     * Patrón aplicado: Template Method (dispatchExitProcessor.process()).
+     */
     @Override
     @Transactional
     public MovementAppResponse consume(ConsumeReservationCommand command) {
         return mapper.toResponse(dispatchExitProcessor.process(command));
     }
 
+    /**
+     * Revierte un movimiento de inventario compensando los saldos físicos y marcándolo como anulado.
+     * Patrones aplicados:
+     * - Command: Ejecuta command.undo() para restablecer exactamente los deltas contrarios.
+     * - Observer: Notifica a los observadores de stock tras la reversión.
+     */
     @Override
     @Transactional
     public MovementAppResponse undo(Integer movementId) {
@@ -126,6 +159,9 @@ public class InventoryMovementService implements RegisterEntryUseCase, RegisterE
         return mapper.toResponse(saved);
     }
 
+    /**
+     * Consulta movimientos de inventario con filtros de búsqueda y paginación.
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResult<MovementAppResponse> findMovements(MovementFilter filter, PageQuery pageQuery) {

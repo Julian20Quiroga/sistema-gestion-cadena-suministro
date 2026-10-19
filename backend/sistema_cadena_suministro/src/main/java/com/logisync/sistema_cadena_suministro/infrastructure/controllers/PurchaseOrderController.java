@@ -39,6 +39,10 @@ public class PurchaseOrderController {
     private final QueryPurchaseOrderUseCase queryUseCase;
     private final PurchaseOrderRestMapper mapper;
 
+    /**
+     * Emite una orden de compra hacia un proveedor aplicando la cadena de validación empresarial.
+     * Patrones aplicados: Chain of Responsibility (CreationOrderChain) y State (PurchaseOrderState inicial).
+     */
     @PostMapping
     @PreAuthorize("hasRole('PRESIDENT')")
     @Operation(summary = "Create purchase order")
@@ -47,6 +51,10 @@ public class PurchaseOrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(res));
     }
 
+    /**
+     * Registra la recepción física de mercancía incrementando el stock y cerrando necesidades asociadas.
+     * Patrones aplicados: State (transiciona estado a PARTIALLY_RECEIVED o COMPLETED) y Mediator (notifica stock).
+     */
     @PostMapping("/{id}/reception")
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Receive merchandise for purchase order")
@@ -57,6 +65,10 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(mapper.toResponse(res));
     }
 
+    /**
+     * Cancela la orden de compra si se encuentra en un estado admisible según las reglas de negocio.
+     * Patrón aplicado: State (PurchaseOrderState valida la transición de cancelación).
+     */
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasRole('PRESIDENT')")
     @Operation(summary = "Cancel purchase order")
@@ -65,6 +77,9 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(mapper.toResponse(res));
     }
 
+    /**
+     * Consulta una orden de compra por su identificador primario.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Find purchase order by ID")
@@ -73,6 +88,9 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(mapper.toResponse(res));
     }
 
+    /**
+     * Consulta paginada y filtrada de órdenes de compra por proveedor, bodega receptora o estado.
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('PRESIDENT', 'BRANCH_ADMIN')")
     @Operation(summary = "Search purchase orders with pagination")
