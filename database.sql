@@ -328,3 +328,16 @@ CREATE TABLE telemetry_readings (
     CONSTRAINT uq_vehicle_recorded_at
         UNIQUE (vehicle_id, recorded_at)
 );
+
+CREATE TABLE layout_snapshots (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id INT NOT NULL,
+    snapshot_name VARCHAR(150) NOT NULL,
+    layout_data_json LONGTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_layout_snapshots_warehouse
+        FOREIGN KEY (warehouse_id)
+        REFERENCES warehouses(id)
+);
