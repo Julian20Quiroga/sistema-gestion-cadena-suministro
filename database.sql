@@ -267,6 +267,7 @@ CREATE TABLE dispatches (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     warehouses_id INT NOT NULL,
+    vehicle_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
@@ -276,7 +277,10 @@ CREATE TABLE dispatches (
         REFERENCES orders(id),
     CONSTRAINT fk_dispatches_warehouse
         FOREIGN KEY (warehouses_id)
-        REFERENCES warehouses(id)
+        REFERENCES warehouses(id),
+    CONSTRAINT fk_dispatches_vehicle
+        FOREIGN KEY (vehicle_id)
+        REFERENCES vehicles(id)
 );
 CREATE TABLE detail_dispatches (
     id INT AUTO_INCREMENT PRIMARY KEY,
