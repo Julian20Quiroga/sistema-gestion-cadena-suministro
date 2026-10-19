@@ -14,6 +14,7 @@ import com.logisync.sistema_cadena_suministro.infrastructure.persistence.mappers
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
+@Transactional
 public class PurchaseOrderAdapterPersistence implements PurchaseOrderRepository {
 
     private final PurchaseOrderDAO dao;
