@@ -61,6 +61,8 @@ CREATE TABLE products (
     processor VARCHAR(100),
     color VARCHAR(50),
     sale_price DECIMAL(12,2) NOT NULL,
+    weight_kg DECIMAL(10,3) NOT NULL DEFAULT 0.001,
+    reorder_point INT NOT NULL DEFAULT 0,
     product_status ENUM('ACTIVE', 'DELETED') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
