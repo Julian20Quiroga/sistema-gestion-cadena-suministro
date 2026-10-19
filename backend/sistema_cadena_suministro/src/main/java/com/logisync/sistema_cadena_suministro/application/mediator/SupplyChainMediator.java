@@ -9,4 +9,6 @@ public interface SupplyChainMediator {
     void registerColleague(Colleague colleague);
     void notifyStockLow(Integer productId, long availableStock, int reorderPoint);
     void notifyPurchaseOrderCreated(PurchaseOrder order);
+    void notifyOrderCreated(com.logisync.sistema_cadena_suministro.domain.models.Order order);
+    void notifyOrderCancelled(com.logisync.sistema_cadena_suministro.domain.models.Order order);
 }

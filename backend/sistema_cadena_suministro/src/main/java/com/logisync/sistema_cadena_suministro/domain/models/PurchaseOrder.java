@@ -36,6 +36,11 @@ public class PurchaseOrder {
         changeState(PurchaseOrderStateFactory.from(status));
     }
 
+    public void setStatus(PurchaseOrderStatus status) {
+        this.status = status;
+        this.state = PurchaseOrderStateFactory.from(status);
+    }
+
     public void changeState(PurchaseOrderState newState) {
         this.state = newState;
         this.status = newState.getStatus();

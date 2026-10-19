@@ -227,6 +227,8 @@ CREATE TABLE orders (
     delivery_country VARCHAR(100) NOT NULL,
     customer_phone VARCHAR(20) NOT NULL,
     customer_name VARCHAR(150) NOT NULL,
+    delivery_latitude DECIMAL(9,6) NULL,
+    delivery_longitude DECIMAL(9,6) NULL,
     order_status ENUM('REGISTRADO', 'PREPARACION', 'DESPACHADO', 'ENTREGADO', 'ANULADO') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
