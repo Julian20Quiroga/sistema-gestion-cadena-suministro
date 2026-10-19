@@ -114,6 +114,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Invalid credentials or missing authentication");
     }
 
+    @ExceptionHandler(com.logisync.sistema_cadena_suministro.domain.exceptions.UnauthorizedException.class)
+    ProblemDetail handleDomainUnauthorized(com.logisync.sistema_cadena_suministro.domain.exceptions.UnauthorizedException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "unauthorized", "Authentication failed", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     ProblemDetail handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);
