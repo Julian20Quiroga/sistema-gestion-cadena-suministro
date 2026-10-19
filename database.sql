@@ -250,6 +250,19 @@ CREATE TABLE detail_orders (
         FOREIGN KEY (order_id)
         REFERENCES orders(id)
 );
+CREATE TABLE vehicles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    plate VARCHAR(20) NOT NULL UNIQUE,
+    model VARCHAR(100) NOT NULL,
+    capacity_kg DECIMAL(10,2) NOT NULL,
+    average_speed_kmh DECIMAL(5,2) NOT NULL DEFAULT 40.00,
+    api_key_hash VARCHAR(128) NOT NULL UNIQUE,
+    status ENUM('ACTIVE', 'DELETED') NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE dispatches (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
