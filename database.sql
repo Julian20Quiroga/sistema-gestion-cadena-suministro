@@ -172,7 +172,7 @@ CREATE TABLE purchase_orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT NOT NULL,
     order_date TIMESTAMP NOT NULL,
-    status ENUM('REGISTRADA', 'ANULADA') NOT NULL,
+    status ENUM('REGISTRADA', 'RECIBIDA_PARCIAL', 'RECIBIDA', 'ANULADA') NOT NULL,
     warehouse_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -189,6 +189,7 @@ CREATE TABLE detail_purchase_orders (
     product_id INT NOT NULL,
     purchase_order_id INT NOT NULL,
     quantity INT NOT NULL,
+    received_quantity INT NOT NULL DEFAULT 0,
     unit_price DECIMAL(12,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -200,6 +201,24 @@ CREATE TABLE detail_purchase_orders (
         FOREIGN KEY (purchase_order_id)
         REFERENCES purchase_orders(id)
 );
+CREATE TABLE supply_needs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    requested_quantity INT NOT NULL,
+    origin ENUM('LOW_STOCK', 'FORECAST', 'MANUAL') NOT NULL,
+    status ENUM('OPEN', 'COVERED', 'DISMISSED') NOT NULL DEFAULT 'OPEN',
+    purchase_order_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_supply_needs_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id),
+    CONSTRAINT fk_supply_needs_purchase_order
+        FOREIGN KEY (purchase_order_id)
+        REFERENCES purchase_orders(id)
+);
+
 CREATE TABLE orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_reference VARCHAR(100) NOT NULL UNIQUE,
