@@ -39,4 +39,14 @@ public class DefaultSupplyChainMediator implements SupplyChainMediator {
             procurementColleague.handlePurchaseOrderCreated(order);
         }
     }
+
+    @Override
+    public void notifyOrderCreated(com.logisync.sistema_cadena_suministro.domain.models.Order order) {
+        // Will notify dispatch/reservation subsystem when dispatch module is linked
+    }
+
+    @Override
+    public void notifyOrderCancelled(com.logisync.sistema_cadena_suministro.domain.models.Order order) {
+        // Will notify inventory/reservation subsystem to release reserved stock if any
+    }
 }
