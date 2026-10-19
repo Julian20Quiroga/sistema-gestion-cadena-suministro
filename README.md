@@ -4,11 +4,12 @@
 
 - **Lenguaje:** Java 21
 - **Framework Principal:** Spring Boot 4.1.1
-- **Seguridad:** Spring Security y JSON Web Tokens (JJWT 0.12.6)
+- **Seguridad:** Spring Security y JSON Web Tokens (JJWT 0.13.0)
 - **Persistencia y ORM:** Spring Data JPA con Hibernate
-- **Bases de Datos:** PostgreSQL 15+ (producción) y H2 Database (entorno local y pruebas en memoria)
+- **Bases de Datos:** MySQL (base de datos principal) y H2 Database (exclusivamente para pruebas automáticas / tests)
+- **Documentación API:** SpringDoc OpenAPI / Swagger UI
 - **Monitoreo y Métricas:** Spring Boot Actuator y Micrometer Prometheus
-- **Herramientas de Desarrollo:** Project Lombok
+- **Herramientas de Desarrollo:** Project Lombok y MapStruct
 - **Gestor de Dependencias y Construcción:** Apache Maven 3.9+
 
 ---
@@ -19,6 +20,7 @@
 
 - Tener instalado **Java 21** (JDK 21 o superior).
 - Tener instalado **Apache Maven 3.9+** (o usar el wrapper de Maven).
+- Servidor **MySQL** en ejecución con la base de datos configurada.
 
 ### 2. Pasos de Ejecución
 
@@ -39,5 +41,6 @@
 
 4. El backend estará en ejecución y escuchando peticiones en:
    ```
-   http://localhost:8080
+   http://localhost:5050
    ```
+   *(Documentación Swagger disponible en `http://localhost:5050/swagger-ui.html`)*
