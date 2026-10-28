@@ -44,3 +44,44 @@
    http://localhost:5050
    ```
    *(Documentación Swagger disponible en `http://localhost:5050/swagger-ui.html`)*
+---
+
+# LogiSync — Frontend
+
+## Tecnologías Usadas
+
+- **Interfaz:** React 19
+- **Desarrollo y compilación:** Vite 8
+- **Rutas:** React Router
+- **Conexión con el backend:** Axios
+
+## Cómo Ejecutar el Frontend
+
+### 1. Requisitos Previos
+
+- Tener instalado **Node.js** y **npm**.
+- Tener el backend en ejecución en `http://127.0.0.1:5050` para usar las funciones conectadas al servidor.
+
+### 2. Pasos de Ejecución
+
+1. Abrir una terminal en la carpeta principal del repositorio y ubicarse en el directorio del frontend:
+
+   ```bash
+   cd frontend
+   ```
+
+2. Instalar las dependencias:
+
+   ```bash
+   npm install
+   ```
+
+3. Iniciar el servidor de desarrollo:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Abrir en el navegador `http://localhost:5173/`.
+
+El frontend sigue en desarrollo. La autenticación y el dashboard están implementados; los demás módulos están pendientes.
