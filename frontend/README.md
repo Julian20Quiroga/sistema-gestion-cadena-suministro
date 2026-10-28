@@ -1,16 +1,35 @@
-# React + Vite
+# LogiSync — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Tecnologías usadas
 
-Currently, two official plugins are available:
+- **Biblioteca de interfaz:** React 19
+- **Herramienta de desarrollo y compilación:** Vite 8
+- **Rutas:** React Router
+- **Solicitudes al backend:** Axios
+- **Backend:** Spring Boot, disponible localmente en `http://127.0.0.1:5050`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Requisitos previos
 
-## React Compiler
+- Tener instalado **Node.js** y **npm**.
+- Tener el backend de LogiSync en ejecución en `http://127.0.0.1:5050` para usar las funciones que requieren conexión con el servidor.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Cómo ejecutar el frontend
 
-## Expanding the ESLint configuration
+1. Abrir una terminal en la carpeta `frontend` del repositorio.
+2. Instalar las dependencias:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+   ```bash
+   npm install
+
+   ```
+3. Iniciar el servidor de desarrollo:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Abrir en el navegador la dirección que muestra Vite. En este proyecto es `http://localhost:5173/`.
+
+## Estado del proyecto
+
+El frontend está en desarrollo. La autenticación y el dashboard están implementados. Los módulos de despachos, inventario, órdenes de compra, pedidos, productos, proveedores, seguimiento y usuarios están pendientes de desarrollo.
