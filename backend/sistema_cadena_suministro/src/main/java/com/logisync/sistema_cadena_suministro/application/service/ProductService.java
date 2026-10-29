@@ -66,14 +66,16 @@ public class ProductService
         if (productRepository.existsBySkuExcluding(command.sku(), id)) {
             throw new ConflictException("SKU already registered: " + command.sku());
         }
-        requireActiveSupplier(command.supplierId());
+        if (command.supplierId() != null) {
+            requireActiveSupplier(command.supplierId());
+        }
         Product product = mapper.toModelUpdate(command);
         product.setCategories(resolveCategories(command.categoryIds()));
         return mapper.toResponse(productRepository.update(product, id));
     }
 
     /**
-     * Aplica el borrado lógico del producto en la base de datos.
+     * Aplica el borrado definitivo del producto en la base de datos.
      */
     @Override
     @Transactional
@@ -130,3 +132,8 @@ public class ProductService
         return categories;
     }
 }
+
+
+
+
+

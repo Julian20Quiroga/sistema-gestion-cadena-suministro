@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
 import UIFactoryProvider from '../../shared/factories/ui/UIFactoryProvider';
 import './Dashboard.css';
 
 function Dashboard() {
   const { role } = useAuth();
+  const navigate = useNavigate();
 
   const uiFactory = role
     ? UIFactoryProvider.getFactory(role)
@@ -75,6 +77,7 @@ function Dashboard() {
                           <button
                             className="navigation-subitem"
                             key={child}
+                            onClick={() => { if (child === 'Productos') navigate('/productos'); }}
                           >
                             {child}
                           </button>
@@ -91,6 +94,9 @@ function Dashboard() {
                     item.label === 'Dashboard' ? 'active' : ''
                   }`}
                   key={item.label}
+                  onClick={() => {
+                    if (item.label === 'Proveedores') navigate('/proveedores');
+                  }}
                 >
                   <span className="navigation-icon">
                     {navigationIcons[item.label]}

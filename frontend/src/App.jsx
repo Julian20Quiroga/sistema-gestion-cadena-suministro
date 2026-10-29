@@ -3,6 +3,8 @@ import './App.css';
 
 import Login from './modules/auth/Login';
 import Dashboard from './modules/dashboard/Dashboard';
+import ProductList from './modules/productos/ProductList';
+import SupplierList from './modules/proveedores/SupplierList';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -24,7 +26,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
+          <Route
+            path="/productos"
+            element={
+              <ProtectedRoute>
+                <ProductList />
+              </ProtectedRoute>
+            }
+          />
+            <Route
+            path="/proveedores"
+            element={
+              <ProtectedRoute>
+                <SupplierList />
+              </ProtectedRoute>
+            }
+          />      </Routes>
       </BrowserRouter>
     </AuthProvider>
   );

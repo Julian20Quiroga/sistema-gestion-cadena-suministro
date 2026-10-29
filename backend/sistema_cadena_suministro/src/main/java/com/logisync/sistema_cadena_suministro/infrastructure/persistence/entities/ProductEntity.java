@@ -26,7 +26,7 @@ public class ProductEntity extends BaseEntity {
     @Column(name = "product_name")
     private String name;
 
-    @Column(name = "supplier_id")
+    @Column(name = "supplier_id", nullable = true)
     private Integer supplierId;
 
     @Column(name = "sku")
@@ -70,3 +70,4 @@ public class ProductEntity extends BaseEntity {
     @BatchSize(size = 50)
     private Set<CategoryEntity> categories = new HashSet<>();
 }
+

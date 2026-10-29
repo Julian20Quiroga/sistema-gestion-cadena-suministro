@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PurchaseOrderDAO extends JpaRepository<PurchaseOrderEntity, Integer> {
 
+    boolean existsBySupplierId(Integer supplierId);
+
     @Query("""
         SELECT po FROM PurchaseOrderEntity po
         WHERE (:supplierId IS NULL OR po.supplierId = :supplierId)
@@ -26,3 +28,4 @@ public interface PurchaseOrderDAO extends JpaRepository<PurchaseOrderEntity, Int
             Pageable pageable
     );
 }
+

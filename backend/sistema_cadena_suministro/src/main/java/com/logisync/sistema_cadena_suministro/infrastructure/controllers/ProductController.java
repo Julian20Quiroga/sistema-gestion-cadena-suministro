@@ -48,35 +48,36 @@ public class ProductController {
     @PreAuthorize("hasRole('PRESIDENT')")
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> update(@Valid @RequestBody UpdateProductRequest request,
-            @PathVariable Integer id) {
+            @PathVariable("id") Integer id) {
         return ResponseEntity.ok(restMapper.toResponse(updateProductUseCase.update(restMapper.toCommandUpdate(request), id)));
     }
 
     @PreAuthorize("hasRole('PRESIDENT')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         deleteProductUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> findById(@PathVariable Integer id) {
+    public ResponseEntity<ProductResponse> findById(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(restMapper.toResponse(queryProductUseCase.findById(id)));
     }
 
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping
     public ResponseEntity<PageResponse<ProductResponse>> findAll(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String sku,
-            @RequestParam(required = false) Integer supplierId,
-            @RequestParam(required = false) Integer categoryId,
-            @RequestParam(required = false) SoftDeleteStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "sku", required = false) String sku,
+            @RequestParam(name = "supplierId", required = false) Integer supplierId,
+            @RequestParam(name = "categoryId", required = false) Integer categoryId,
+            @RequestParam(name = "status", required = false) SoftDeleteStatus status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         ProductFilter filter = new ProductFilter(name, sku, supplierId, categoryId, status);
         return ResponseEntity.ok(PageResponse.from(
                 queryProductUseCase.findAll(filter, PageQuery.of(page, size)), restMapper::toResponse));
     }
 }
+

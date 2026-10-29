@@ -54,7 +54,7 @@ CREATE TABLE suppliers (
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
-    supplier_id INT NOT NULL,
+    supplier_id INT NULL,
     sku VARCHAR(50) NOT NULL UNIQUE,
     product_description VARCHAR(500),
     model VARCHAR(100),
@@ -341,3 +341,4 @@ CREATE TABLE layout_snapshots (
         FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(id)
 );
+

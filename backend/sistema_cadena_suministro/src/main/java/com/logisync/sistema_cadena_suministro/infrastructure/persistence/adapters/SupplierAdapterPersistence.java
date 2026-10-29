@@ -5,9 +5,12 @@ import com.logisync.sistema_cadena_suministro.application.pagination.PageResult;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.SupplierRepository;
 import com.logisync.sistema_cadena_suministro.domain.enums.SoftDeleteStatus;
 import com.logisync.sistema_cadena_suministro.domain.exceptions.ResourceNotFoundException;
+import com.logisync.sistema_cadena_suministro.domain.exceptions.ConflictException;
 import com.logisync.sistema_cadena_suministro.domain.models.Supplier;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.PageSupport;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.SupplierDAO;
+import com.logisync.sistema_cadena_suministro.infrastructure.persistence.ProductDAO;
+import com.logisync.sistema_cadena_suministro.infrastructure.persistence.PurchaseOrderDAO;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.entities.SupplierEntity;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.mappers.SupplierPersistenceMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,8 @@ import java.util.Optional;
 public class SupplierAdapterPersistence implements SupplierRepository {
 
     private final SupplierDAO supplierDAO;
+    private final ProductDAO productDAO;
+    private final PurchaseOrderDAO purchaseOrderDAO;
     private final SupplierPersistenceMapper mapper;
 
     @Override
@@ -50,8 +55,11 @@ public class SupplierAdapterPersistence implements SupplierRepository {
     public void delete(Integer id) {
         SupplierEntity existingSupplier = supplierDAO.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier", id));
-        existingSupplier.setStatus(SoftDeleteStatus.DELETED);
-        supplierDAO.save(existingSupplier);
+        if (purchaseOrderDAO.existsBySupplierId(id)) {
+            throw new ConflictException("No se puede eliminar el proveedor porque tiene órdenes de compra históricas asociadas.");
+        }
+        productDAO.clearSupplierReference(id);
+        supplierDAO.delete(existingSupplier);
     }
 
     @Override
@@ -66,3 +74,7 @@ public class SupplierAdapterPersistence implements SupplierRepository {
                 mapper::toDomain);
     }
 }
+
+
+
+
