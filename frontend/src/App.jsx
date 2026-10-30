@@ -6,6 +6,7 @@ import Dashboard from './modules/dashboard/Dashboard';
 import ProductList from './modules/productos/ProductList';
 import SupplierList from './modules/proveedores/SupplierList';
 import Inventory from './modules/inventario/Inventory';
+import OrderList from './modules/pedidos/OrderList';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -35,7 +36,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-            <Route
+          <Route
             path="/proveedores"
             element={
               <ProtectedRoute>
@@ -51,6 +52,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/pedidos"
+            element={
+              <ProtectedRoute>
+                <OrderList />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
@@ -58,4 +67,3 @@ function App() {
 }
 
 export default App;
-
