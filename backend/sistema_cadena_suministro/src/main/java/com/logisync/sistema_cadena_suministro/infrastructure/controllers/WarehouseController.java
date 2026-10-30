@@ -68,11 +68,12 @@ public class WarehouseController {
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping
     public ResponseEntity<PageResponse<WarehouseResponse>> findAll(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) SoftDeleteStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "status", required = false) SoftDeleteStatus status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(
                 queryWarehouseUseCase.findAll(name, status, PageQuery.of(page, size)), restMapper::toResponse));
     }
 }
+

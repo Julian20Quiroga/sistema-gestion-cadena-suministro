@@ -5,6 +5,7 @@ import Login from './modules/auth/Login';
 import Dashboard from './modules/dashboard/Dashboard';
 import ProductList from './modules/productos/ProductList';
 import SupplierList from './modules/proveedores/SupplierList';
+import Inventory from './modules/inventario/Inventory';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -41,10 +42,20 @@ function App() {
                 <SupplierList />
               </ProtectedRoute>
             }
-          />      </Routes>
+          />
+          <Route
+            path="/inventario"
+            element={
+              <ProtectedRoute>
+                <Inventory />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   );
 }
 
 export default App;
+

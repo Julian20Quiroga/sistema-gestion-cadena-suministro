@@ -107,11 +107,11 @@ public class InventoryController {
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/levels")
     public ResponseEntity<PageResponse<InventoryLevelResponse>> levels(
-            @RequestParam(required = false) Integer productId,
-            @RequestParam(required = false) Integer warehouseId,
-            @RequestParam(required = false) Integer storageSpaceId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "productId", required = false) Integer productId,
+            @RequestParam(name = "warehouseId", required = false) Integer warehouseId,
+            @RequestParam(name = "storageSpaceId", required = false) Integer storageSpaceId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(
                 queryInventoryUseCase.findLevels(productId, warehouseId, storageSpaceId, PageQuery.of(page, size)),
                 restMapper::toResponse));
@@ -132,7 +132,7 @@ public class InventoryController {
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/products/{productId}/rotation")
     public ResponseEntity<ProductRotationResponse> rotation(@PathVariable("productId") Integer productId,
-            @RequestParam(defaultValue = "30") int days) {
+            @RequestParam(name = "days", defaultValue = "30") int days) {
         return ResponseEntity.ok(restMapper.toResponse(queryInventoryUseCase.rotation(productId, days)));
     }
 
@@ -142,12 +142,12 @@ public class InventoryController {
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/movements")
     public ResponseEntity<PageResponse<MovementResponse>> movements(
-            @RequestParam(required = false) Integer productId,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(name = "productId", required = false) Integer productId,
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(
                 queryMovementUseCase.findMovements(new MovementFilter(productId, type, from, to),
                         PageQuery.of(page, size)),
@@ -158,3 +158,4 @@ public class InventoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
+
