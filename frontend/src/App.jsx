@@ -8,6 +8,7 @@ import SupplierList from './modules/proveedores/SupplierList';
 import Inventory from './modules/inventario/Inventory';
 import OrderList from './modules/pedidos/OrderList';
 import DispatchList from './modules/despachos/DispatchList';
+import Tracking from './modules/seguimiento/Tracking';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -54,6 +55,14 @@ function App() {
             }
           />
           <Route
+            path="/seguimiento"
+            element={
+              <ProtectedRoute>
+                <Tracking />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/despachos"
             element={
               <ProtectedRoute>
@@ -76,3 +85,5 @@ function App() {
 }
 
 export default App;
+
+

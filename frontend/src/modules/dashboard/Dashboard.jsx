@@ -82,6 +82,7 @@ function Dashboard() {
                               if (child === 'Inventario') navigate('/inventario');
                               if (child === 'Pedidos') navigate('/pedidos');
                               if (child === 'Despachos') navigate('/despachos');
+                              if (child === 'Seguimiento') navigate('/seguimiento');
                             }}
                           >
                             {child}
@@ -216,3 +217,5 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+
