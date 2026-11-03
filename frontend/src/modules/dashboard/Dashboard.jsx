@@ -77,7 +77,12 @@ function Dashboard() {
                           <button
                             className="navigation-subitem"
                             key={child}
-                            onClick={() => { if (child === 'Productos') navigate('/productos'); if (child === 'Inventario') navigate('/inventario'); if (child === 'Pedidos') navigate('/pedidos'); }}
+                            onClick={() => {
+                              if (child === 'Productos') navigate('/productos');
+                              if (child === 'Inventario') navigate('/inventario');
+                              if (child === 'Pedidos') navigate('/pedidos');
+                              if (child === 'Despachos') navigate('/despachos');
+                            }}
                           >
                             {child}
                           </button>
@@ -211,5 +216,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
-

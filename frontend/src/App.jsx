@@ -7,6 +7,7 @@ import ProductList from './modules/productos/ProductList';
 import SupplierList from './modules/proveedores/SupplierList';
 import Inventory from './modules/inventario/Inventory';
 import OrderList from './modules/pedidos/OrderList';
+import DispatchList from './modules/despachos/DispatchList';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -49,6 +50,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Inventory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/despachos"
+            element={
+              <ProtectedRoute>
+                <DispatchList />
               </ProtectedRoute>
             }
           />
