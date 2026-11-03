@@ -84,6 +84,7 @@ function Dashboard() {
                               if (child === 'Despachos') navigate('/despachos');
                               if (child === 'Seguimiento') navigate('/seguimiento');
                               if (child === 'IoT') navigate('/iot');
+                              if (child === 'Rutas') navigate('/rutas');
                             }}
                           >
                             {child}
@@ -218,6 +219,8 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+
 
 
 
