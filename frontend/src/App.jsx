@@ -9,6 +9,7 @@ import Inventory from './modules/inventario/Inventory';
 import OrderList from './modules/pedidos/OrderList';
 import DispatchList from './modules/despachos/DispatchList';
 import Tracking from './modules/seguimiento/Tracking';
+import IoT from './modules/iot/IoT';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -55,6 +56,14 @@ function App() {
             }
           />
           <Route
+            path="/iot"
+            element={
+              <ProtectedRoute>
+                <IoT />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/seguimiento"
             element={
               <ProtectedRoute>
@@ -85,5 +94,7 @@ function App() {
 }
 
 export default App;
+
+
 
 
