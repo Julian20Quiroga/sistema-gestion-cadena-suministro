@@ -30,3 +30,34 @@ export async function fetchInventoryWarehouses({ token }) {
   });
   return response.data;
 }
+
+export async function fetchInventoryFreeLocations({ token, warehouseId }) {
+  const response = await httpClient.get(`/api/warehouses/${warehouseId}/free-locations`, {
+    params: { minFree: 1 }, headers: authHeaders(token),
+  });
+  return response.data;
+}
+
+export async function registerInventoryEntry({ token, storageSpaceId, productId, quantity, reference }) {
+  const response = await httpClient.post('/api/inventory/entries', {
+    storageSpaceId: Number(storageSpaceId),
+    productId: Number(productId),
+    quantity: Number(quantity),
+    reference: reference.trim() || null,
+  }, { headers: authHeaders(token) });
+  return response.data;
+}
+
+export async function createInventoryWarehouse({ token, name, address, phone, headquarterId }) {
+  const response = await httpClient.post('/api/warehouses', {
+    name: name.trim(), address: address.trim(), phone: phone.trim(), headquarterId: Number(headquarterId),
+  }, { headers: authHeaders(token) });
+  return response.data;
+}
+
+export async function createInventoryStorageSpace({ token, warehouseId, name, type, parentId, capacity }) {
+  const response = await httpClient.post(`/api/warehouses/${warehouseId}/spaces`, {
+    name: name.trim(), type, parentId: parentId ?? null, capacity: capacity ? Number(capacity) : null,
+  }, { headers: authHeaders(token) });
+  return response.data;
+}

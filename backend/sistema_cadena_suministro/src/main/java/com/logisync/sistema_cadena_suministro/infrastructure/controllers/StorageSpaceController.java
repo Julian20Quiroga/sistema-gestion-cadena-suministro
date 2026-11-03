@@ -71,7 +71,7 @@ public class StorageSpaceController {
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/free-locations")
     public ResponseEntity<List<FreeLocationResponse>> freeLocations(@PathVariable("warehouseId") Integer warehouseId,
-            @RequestParam(defaultValue = "1") long minFree) {
+            @RequestParam(name = "minFree", defaultValue = "1") long minFree) {
         return ResponseEntity.ok(queryStorageStructureUseCase.freeLocations(warehouseId, minFree).stream()
                 .map(restMapper::toResponse).toList());
     }

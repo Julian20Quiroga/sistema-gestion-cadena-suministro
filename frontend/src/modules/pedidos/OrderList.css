@@ -194,6 +194,28 @@
   align-items: center;
 }
 
+.orders-dispatch-warehouse {
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  color: #52616b;
+  font-size: 12px;
+}
+
+.orders-dispatch-warehouse select {
+  max-width: 190px;
+  padding: 6px;
+  border: 1px solid #cbd5dc;
+  border-radius: 5px;
+  font: inherit;
+}
+
+.orders-warning {
+  max-width: 200px;
+  color: #b54708;
+  font-size: 12px;
+}
+
 .orders-form-actions {
   margin-top: 20px;
 }

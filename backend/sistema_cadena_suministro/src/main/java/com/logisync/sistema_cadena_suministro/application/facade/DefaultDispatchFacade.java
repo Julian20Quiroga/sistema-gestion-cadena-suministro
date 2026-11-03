@@ -96,7 +96,9 @@ public class DefaultDispatchFacade implements DispatchFacade {
         dispatch.setDetails(details);
 
         Dispatch saved = dispatchRepository.save(dispatch);
-        updateOrderStatusUseCase.startPreparation(order.getId());
+        if (order.getStatus() == OrderStatus.REGISTRADO) {
+            updateOrderStatusUseCase.startPreparation(order.getId());
+        }
         return mapper.toResponse(saved);
     }
 

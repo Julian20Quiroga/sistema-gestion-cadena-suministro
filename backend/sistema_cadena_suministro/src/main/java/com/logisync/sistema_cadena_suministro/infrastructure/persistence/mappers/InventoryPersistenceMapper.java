@@ -23,9 +23,11 @@ public interface InventoryPersistenceMapper {
 
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
+    @Mapping(target = "movementDate", source = "date")
     @Mapping(target = "movementType", source = "type")
     InventoryMovementEntity toEntity(InventoryMovement movement);
 
+    @Mapping(target = "date", source = "movementDate")
     @Mapping(target = "type", source = "movementType")
     InventoryMovement toDomain(InventoryMovementEntity entity);
 

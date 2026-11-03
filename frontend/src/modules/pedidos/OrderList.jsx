@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
-import { createOrder, fetchOrders, fetchProducts, transitionOrder } from './orderService';
+import {
+  createDispatch,
+  createOrder,
+  fetchActiveWarehouses,
+  fetchDispatchForOrder,
+  fetchOrders,
+  fetchProducts,
+  transitionDispatch,
+  transitionOrder,
+} from './orderService';
 import './OrderList.css';
 
 const statusOptions = [
@@ -47,6 +56,10 @@ function OrderList() {
   const canManageOrders = ['PRESIDENT', 'ROLE_PRESIDENT', 'BRANCH_ADMIN', 'ROLE_BRANCH_ADMIN'].includes(role);
 
   const [orders, setOrders] = useState([]);
+  const [dispatchesByOrder, setDispatchesByOrder] = useState({});
+  const [warehouses, setWarehouses] = useState([]);
+  const [warehouseByOrder, setWarehouseByOrder] = useState({});
+  const [warehouseError, setWarehouseError] = useState('');
   const [products, setProducts] = useState([]);
   const [productsError, setProductsError] = useState('');
   const [referenceText, setReferenceText] = useState('');
@@ -81,8 +94,17 @@ function OrderList() {
       try {
         const result = await fetchOrders({ token, reference, status, page, size: 10 });
         if (!current) return;
-        setOrders(result.content || []);
+        const orderList = result.content || [];
+        setOrders(orderList);
         setTotalPages(result.totalPages || 0);
+        const dispatchEntries = await Promise.all(orderList.map(async (order) => {
+          try {
+            return [order.id, await fetchDispatchForOrder({ token, orderId: order.id })];
+          } catch {
+            return [order.id, null];
+          }
+        }));
+        if (current) setDispatchesByOrder(Object.fromEntries(dispatchEntries));
       } catch (requestError) {
         if (current) setError(apiErrorMessage(requestError, 'No fue posible cargar los pedidos.'));
       } finally {
@@ -93,6 +115,21 @@ function OrderList() {
     loadOrders();
     return () => { current = false; };
   }, [token, reference, status, page, refreshKey]);
+
+  useEffect(() => {
+    let current = true;
+    async function loadWarehouses() {
+      setWarehouseError('');
+      try {
+        const result = await fetchActiveWarehouses({ token });
+        if (current) setWarehouses((result.content || []).filter((warehouse) => warehouse.status === 'ACTIVE'));
+      } catch (requestError) {
+        if (current) setWarehouseError(apiErrorMessage(requestError, 'No fue posible cargar las bodegas activas.'));
+      }
+    }
+    loadWarehouses();
+    return () => { current = false; };
+  }, [token]);
 
   useEffect(() => {
     let current = true;
@@ -200,16 +237,35 @@ function OrderList() {
     }
   }
 
-  async function handleTransition(order, action) {
+  async function handleOrderAction(order, action) {
+    const dispatch = dispatchesByOrder[order.id];
+    const warehouseId = warehouseByOrder[order.id];
+    if (action === 'create-dispatch' && !warehouseId) {
+      setActionError('Selecciona una bodega para crear el despacho.');
+      return;
+    }
     if (action === 'cancel' && !window.confirm('¿Deseas anular el pedido ' + order.orderReference + '?')) return;
 
     setPendingAction(order.id + ':' + action);
     setActionError('');
     setSuccessMessage('');
     try {
-      await transitionOrder({ token, id: order.id, action });
+      if (action === 'create-dispatch') {
+        await createDispatch({ token, orderId: order.id, warehouseId });
+        setSuccessMessage('Despacho creado y existencias reservadas en la bodega.');
+      } else if (action === 'cancel' && dispatch) {
+        await transitionDispatch({ token, id: dispatch.id, action: 'cancel' });
+        setSuccessMessage('Despacho cancelado; la reserva de inventario fue liberada.');
+      } else if (action === 'cancel') {
+        await transitionOrder({ token, id: order.id, action });
+        setSuccessMessage('Pedido anulado.');
+      } else {
+        await transitionDispatch({ token, id: dispatch.id, action });
+        setSuccessMessage(action === 'ship'
+          ? 'Despacho enviado; las unidades se descontaron del inventario.'
+          : action === 'deliver' ? 'Entrega confirmada.' : 'Preparación del despacho iniciada.');
+      }
       setRefreshKey((current) => current + 1);
-      setSuccessMessage('Estado del pedido actualizado.');
     } catch (requestError) {
       setActionError(apiErrorMessage(requestError, 'No fue posible cambiar el estado del pedido.'));
     } finally {
@@ -237,6 +293,7 @@ function OrderList() {
 
       {successMessage && <p className="orders-success" role="status">{successMessage}</p>}
       {actionError && <p className="orders-error" role="alert">{actionError}</p>}
+      {warehouseError && <p className="orders-error" role="alert">{warehouseError}</p>}
 
       {showForm && canManageOrders && (
         <form className="orders-form-card" onSubmit={handleCreate}>
@@ -394,12 +451,16 @@ function OrderList() {
                   <FragmentOrderRow
                     key={order.id}
                     order={order}
+                    dispatch={dispatchesByOrder[order.id]}
+                    warehouses={warehouses}
+                    selectedWarehouseId={warehouseByOrder[order.id] || ''}
                     canManageOrders={canManageOrders}
                     expanded={expandedOrderId === order.id}
                     productsById={productById}
                     pendingAction={pendingAction}
                     onToggle={() => setExpandedOrderId((current) => current === order.id ? null : order.id)}
-                    onTransition={handleTransition}
+                    onAction={handleOrderAction}
+                    onWarehouseChange={(warehouseId) => setWarehouseByOrder((current) => ({ ...current, [order.id]: warehouseId }))}
                   />
                 ))}
               </tbody>
@@ -423,13 +484,20 @@ function OrderList() {
   );
 }
 
-function FragmentOrderRow({ order, canManageOrders, expanded, productsById, pendingAction, onToggle, onTransition }) {
-  const actions = canManageOrders ? (() => {
-    if (order.status === 'REGISTRADO') return [['prepare', 'Iniciar preparación'], ['cancel', 'Anular']];
-    if (order.status === 'PREPARACION') return [['dispatch', 'Marcar despachado'], ['cancel', 'Anular']];
-    if (order.status === 'DESPACHADO') return [['deliver', 'Marcar entregado']];
-    return [];
-  })() : [];
+function FragmentOrderRow({ order, dispatch, warehouses, selectedWarehouseId, canManageOrders, expanded, productsById, pendingAction, onToggle, onAction, onWarehouseChange }) {
+  const actions = [];
+  if (canManageOrders && !dispatch && ['REGISTRADO', 'PREPARACION'].includes(order.status)) {
+    actions.push(['create-dispatch', 'Crear despacho y reservar']);
+    actions.push(['cancel', 'Anular']);
+  } else if (canManageOrders && dispatch?.status === 'PENDIENTE') {
+    actions.push(['prepare', 'Iniciar alistamiento']);
+    actions.push(['cancel', 'Cancelar despacho']);
+  } else if (canManageOrders && dispatch?.status === 'PREPARANDO') {
+    actions.push(['ship', 'Despachar y descontar stock']);
+    actions.push(['cancel', 'Cancelar despacho']);
+  } else if (canManageOrders && dispatch?.status === 'EN_TRANSPORTE') {
+    actions.push(['deliver', 'Confirmar entrega']);
+  }
 
   return (
     <>
@@ -443,18 +511,28 @@ function FragmentOrderRow({ order, canManageOrders, expanded, productsById, pend
         {canManageOrders && (
           <td>
             <div className="orders-row-actions">
+              {canManageOrders && !dispatch && ['REGISTRADO', 'PREPARACION'].includes(order.status) && (
+                <label className="orders-dispatch-warehouse">
+                  Bodega
+                  <select value={selectedWarehouseId} onChange={(event) => onWarehouseChange(event.target.value)} disabled={Boolean(pendingAction)}>
+                    <option value="">Selecciona una bodega</option>
+                    {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
+                  </select>
+                </label>
+              )}
               {actions.map(([action, label]) => (
                 <button
                   key={action}
                   type="button"
                   className={action === 'cancel' ? 'orders-danger-button' : ''}
-                  onClick={() => onTransition(order, action)}
-                  disabled={pendingAction === order.id + ':' + action || Boolean(pendingAction)}
+                  onClick={() => onAction(order, action)}
+                  disabled={pendingAction === order.id + ':' + action || Boolean(pendingAction) || (action === 'create-dispatch' && (!selectedWarehouseId || warehouses.length === 0))}
                 >
                   {pendingAction === order.id + ':' + action ? 'Procesando…' : label}
                 </button>
               ))}
-              {actions.length === 0 && <span className="orders-muted">Sin acciones</span>}
+              {actions.length === 0 && !(!dispatch && order.status === 'ENTREGADO') && <span className="orders-muted">Sin acciones</span>}
+              {!dispatch && ['DESPACHADO', 'ENTREGADO'].includes(order.status) && <span className="orders-warning">Pedido sin despacho; el inventario no registró la salida.</span>}
             </div>
           </td>
         )}
