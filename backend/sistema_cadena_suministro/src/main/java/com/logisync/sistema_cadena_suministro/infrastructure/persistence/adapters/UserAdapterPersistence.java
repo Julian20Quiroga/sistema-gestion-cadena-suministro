@@ -1,6 +1,7 @@
 package com.logisync.sistema_cadena_suministro.infrastructure.persistence.adapters;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
@@ -36,4 +37,13 @@ public class UserAdapterPersistence implements UserRepository {
         return mapper.toDomain(userDAO.save(userEntity));
     }
 
+    @Override
+    public List<User> findAll() {
+        return userDAO.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        return userDAO.existsByUsername(username);
+    }
 }

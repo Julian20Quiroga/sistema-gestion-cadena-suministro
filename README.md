@@ -84,4 +84,4 @@
 
 4. Abrir en el navegador `http://localhost:5173/`.
 
-El frontend está en desarrollo activo. Incluye autenticación, dashboard, productos, proveedores, inventario, pedidos, abastecimiento, despachos, seguimiento, IoT y rutas. El módulo de usuarios y las funciones pendientes se continuarán implementando.
+El frontend incluye autenticación, dashboard, productos, proveedores, inventario, pedidos, abastecimiento, despachos, seguimiento, IoT, rutas, predicción de demanda, optimización de bodegas y administración de usuarios.

@@ -86,6 +86,8 @@ function Dashboard() {
                               if (child === 'Seguimiento') navigate('/seguimiento');
                               if (child === 'IoT') navigate('/iot');
                               if (child === 'Rutas') navigate('/rutas');
+                              if (child === 'Predicción') navigate('/prediccion');
+                              if (child === 'Optimización') navigate('/optimizacion');
                             }}
                           >
                             {child}
@@ -105,6 +107,7 @@ function Dashboard() {
                   key={item.label}
                   onClick={() => {
                     if (item.label === 'Proveedores') navigate('/proveedores');
+                    if (item.label === 'Usuarios') navigate('/usuarios');
                   }}
                 >
                   <span className="navigation-icon">

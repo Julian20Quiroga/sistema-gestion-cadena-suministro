@@ -8,4 +8,5 @@ import com.logisync.sistema_cadena_suministro.infrastructure.persistence.entitie
 
 public interface UserDAO extends JpaRepository<UserEntity, Integer> {
     Optional<UserEntity> findByUsername(String username);
+    boolean existsByUsername(String username);
 }

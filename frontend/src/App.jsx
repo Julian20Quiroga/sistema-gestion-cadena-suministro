@@ -12,6 +12,9 @@ import Tracking from './modules/seguimiento/Tracking';
 import IoT from './modules/iot/IoT';
 import RoutesPage from './modules/rutas/Routes';
 import PurchaseOrderList from './modules/ordenes_compra/PurchaseOrderList';
+import Forecast from './modules/prediccion/Forecast';
+import Optimization from './modules/optimizacion/Optimization';
+import Users from './modules/usuarios/Users';
 
 import { AuthProvider } from './shared/context/AuthContext';
 import ProtectedRoute from './shared/ProtectedRoute';
@@ -98,6 +101,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/prediccion"
+            element={
+              <ProtectedRoute>
+                <Forecast />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/optimizacion"
+            element={
+              <ProtectedRoute>
+                <Optimization />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/usuarios"
+            element={
+              <ProtectedRoute>
+                <Users />
               </ProtectedRoute>
             }
           />
