@@ -158,3 +158,4 @@ public class InventoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
+

@@ -44,6 +44,7 @@ public class ProductAdapterPersistence implements ProductRepository {
         ProductEntity entity = productDAO.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
         mapper.updateEntity(product, entity);
+        entity.setSupplierId(product.getSupplierId());
         entity.setCategories(managedCategories(product.getCategories()));
         return mapper.toDomain(productDAO.save(entity));
     }
@@ -52,8 +53,7 @@ public class ProductAdapterPersistence implements ProductRepository {
     public void delete(Integer id) {
         ProductEntity entity = productDAO.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
-        entity.setStatus(SoftDeleteStatus.DELETED);
-        productDAO.save(entity);
+        productDAO.delete(entity);
     }
 
     @Override
@@ -85,3 +85,5 @@ public class ProductAdapterPersistence implements ProductRepository {
         return new HashSet<>(categoryDAO.findAllById(categories.stream().map(Category::getId).toList()));
     }
 }
+
+

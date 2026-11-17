@@ -54,7 +54,7 @@ CREATE TABLE suppliers (
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
-    supplier_id INT NOT NULL,
+    supplier_id INT NULL,
     sku VARCHAR(50) NOT NULL UNIQUE,
     product_description VARCHAR(500),
     model VARCHAR(100),
@@ -287,6 +287,8 @@ CREATE TABLE detail_dispatches (
     dispatch_id INT NOT NULL,
     detail_order_id INT NOT NULL unique,
     storage_space_id INT NOT NULL,
+    inventory_id INT NOT NULL,
+    quantity INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
@@ -298,7 +300,10 @@ CREATE TABLE detail_dispatches (
         REFERENCES detail_orders(id),
     CONSTRAINT fk_detail_dispatches_storage_space
         FOREIGN KEY (storage_space_id)
-        REFERENCES storage_spaces(id)
+        REFERENCES storage_spaces(id),
+    CONSTRAINT fk_detail_dispatches_inventory
+        FOREIGN KEY (inventory_id)
+        REFERENCES inventory(id)
 );
 CREATE TABLE shipment_tracking (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -341,3 +346,4 @@ CREATE TABLE layout_snapshots (
         FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(id)
 );
+

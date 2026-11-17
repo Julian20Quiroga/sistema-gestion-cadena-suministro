@@ -76,3 +76,4 @@ public class WarehouseController {
                 queryWarehouseUseCase.findAll(name, status, PageQuery.of(page, size)), restMapper::toResponse));
     }
 }
+

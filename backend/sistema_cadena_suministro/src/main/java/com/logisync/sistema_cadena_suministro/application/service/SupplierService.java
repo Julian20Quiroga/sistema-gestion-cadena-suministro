@@ -50,7 +50,7 @@ public class SupplierService
     }
 
     /**
-     * Realiza el borrado lógico del proveedor.
+     * Realiza el borrado definitivo del proveedor.
      */
     @Override
     @Transactional
@@ -78,3 +78,4 @@ public class SupplierService
         return supplierRepository.findAll(name, status, pageQuery).map(supplierApplicationMapper::toResponse);
     }
 }
+

@@ -1,0 +1,475 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f3f8fc;
+  color: #102a43;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* =========================
+   CONTENEDOR PRINCIPAL
+========================= */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* =========================
+   PANEL IZQUIERDO
+========================= */
+
+.login-brand {
+  position: relative;
+  width: 45%;
+  min-height: 100vh;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(
+    135deg,
+    #0b3158 0%,
+    #092c50 55%,
+    #062541 100%
+  );
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  margin-top: -30px;
+}
+
+/* =========================
+   LOGO CUBO
+========================= */
+
+.brand-logo {
+  position: relative;
+  width: 90px;
+  height: 82px;
+  margin: 0 auto 20px;
+}
+
+.cube-top,
+.cube-left,
+.cube-right {
+  position: absolute;
+}
+
+.cube-top {
+  top: 0;
+  left: 17px;
+
+  width: 56px;
+  height: 33px;
+
+  background: #69d5f5;
+
+  clip-path: polygon(
+    50% 0%,
+    100% 50%,
+    50% 100%,
+    0% 50%
+  );
+}
+
+.cube-left {
+  top: 30px;
+  left: 7px;
+
+  width: 42px;
+  height: 48px;
+
+  background: #17b7d5;
+
+  clip-path: polygon(
+    0% 0%,
+    100% 22%,
+    100% 100%,
+    0% 78%
+  );
+}
+
+.cube-right {
+  top: 30px;
+  right: 7px;
+
+  width: 42px;
+  height: 48px;
+
+  background: #24c4df;
+
+  clip-path: polygon(
+    0% 22%,
+    100% 0%,
+    100% 78%,
+    0% 100%
+  );
+}
+
+/* =========================
+   NOMBRE LOGISYNC
+========================= */
+
+.brand-content h1 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+.brand-content h1 span {
+  color: #19c5e5;
+}
+
+/* =========================
+   LINEA TURQUESA
+========================= */
+
+.brand-line {
+  width: 115px;
+  height: 4px;
+
+  margin: 20px auto 24px;
+
+  border-radius: 10px;
+  background-color: #25c6e5;
+}
+
+/* =========================
+   DESCRIPCIÓN
+========================= */
+
+.brand-content p {
+  margin: 0;
+
+  color: #b8ddf0;
+
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+/* =========================
+   DECORACIÓN DEL PANEL
+========================= */
+
+.brand-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.decoration-shape {
+  position: absolute;
+
+  background-color: rgba(68, 142, 190, 0.12);
+
+  transform: rotate(45deg);
+  border-radius: 8px;
+}
+
+.shape-one {
+  width: 130px;
+  height: 130px;
+
+  left: -75px;
+  bottom: 80px;
+}
+
+.shape-two {
+  width: 125px;
+  height: 125px;
+
+  left: 25px;
+  bottom: -65px;
+}
+
+.shape-three {
+  width: 75px;
+  height: 75px;
+
+  left: -35px;
+  bottom: 15px;
+}
+
+/* =========================
+   PANEL DERECHO
+========================= */
+
+.login-form-section {
+  width: 55%;
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px;
+
+  background-color: #f3f8fc;
+}
+
+/* =========================
+   TARJETA LOGIN
+========================= */
+
+.login-card {
+  width: 100%;
+  max-width: 500px;
+
+  padding: 35px 42px;
+
+  background-color: #ffffff;
+
+  border-radius: 16px;
+
+  box-shadow: 0 12px 35px rgba(20, 60, 90, 0.09);
+
+  text-align: center;
+}
+
+/* =========================
+   ICONO SUPERIOR
+========================= */
+
+.login-icon {
+  width: 78px;
+  height: 78px;
+
+  margin: 0 auto 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background-color: #eaf4fb;
+}
+
+.login-icon svg {
+  width: 44px;
+  height: 44px;
+
+  fill: none;
+  stroke: #0c3d78;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* =========================
+   TITULO
+========================= */
+
+.login-card h2 {
+  margin: 0;
+
+  color: #102f54;
+
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* =========================
+   DESCRIPCIÓN
+========================= */
+
+.login-description {
+  margin: 12px 0 28px;
+
+  color: #7187a0;
+
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+/* =========================
+   FORMULARIO
+========================= */
+
+.login-card form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #102a43;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.input-container {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+
+  left: 17px;
+  top: 50%;
+
+  width: 25px;
+  height: 25px;
+
+  transform: translateY(-50%);
+
+  fill: none;
+  stroke: #7187a0;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  pointer-events: none;
+}
+
+.input-container input {
+  width: 100%;
+  height: 54px;
+
+  padding: 0 17px 0 55px;
+
+  border: 1px solid #d4e0ea;
+  border-radius: 10px;
+
+  background-color: #ffffff;
+
+  color: #102a43;
+
+  font-size: 15px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input-container input::placeholder {
+  color: #8195aa;
+}
+
+.input-container input:focus {
+  border-color: #20b9c5;
+
+  box-shadow: 0 0 0 3px rgba(32, 185, 197, 0.12);
+}
+
+/* =========================
+   BOTÓN
+========================= */
+
+.login-button {
+  width: 100%;
+  height: 54px;
+
+  margin-top: 8px;
+
+  border: none;
+  border-radius: 10px;
+
+  background-color: #12afb6;
+
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #0c989f;
+}
+
+.login-button:active {
+  transform: translateY(1px);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+  .login-page {
+    flex-direction: column;
+  }
+
+  .login-brand {
+    width: 100%;
+    min-height: 320px;
+  }
+
+  .login-form-section {
+    width: 100%;
+    min-height: auto;
+    padding: 35px 20px;
+  }
+
+  .brand-content h1 {
+    font-size: 48px;
+  }
+}
+
+@media (max-width: 600px) {
+  .login-brand {
+    min-height: 280px;
+  }
+
+  .brand-content h1 {
+    font-size: 42px;
+  }
+
+  .brand-content p {
+    font-size: 17px;
+  }
+
+  .brand-logo {
+    transform: scale(0.8);
+    margin-bottom: 8px;
+  }
+
+  .login-card {
+    padding: 30px 25px;
+  }
+
+  .login-card h2 {
+    font-size: 29px;
+  }
+
+  .login-description {
+    font-size: 16px;
+  }
+}

@@ -80,3 +80,4 @@ public class ProductController {
                 queryProductUseCase.findAll(filter, PageQuery.of(page, size)), restMapper::toResponse));
     }
 }
+

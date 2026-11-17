@@ -12,7 +12,7 @@ import java.util.List;
 
 public record UpdateProductRequest(
         @NotBlank @Size(max = 100) String name,
-        @NotNull Integer supplierId,
+        Integer supplierId,
         @NotBlank @Size(max = 50) String sku,
         @Size(max = 500) String description,
         @Size(max = 100) String model,
@@ -26,3 +26,4 @@ public record UpdateProductRequest(
         SoftDeleteStatus status,
         List<Integer> categoryIds) {
 }
+
