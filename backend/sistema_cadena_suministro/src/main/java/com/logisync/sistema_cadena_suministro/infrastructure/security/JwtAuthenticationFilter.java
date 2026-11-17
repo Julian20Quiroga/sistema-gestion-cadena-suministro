@@ -15,6 +15,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -24,8 +25,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/api/auth/");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
+
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
@@ -43,12 +53,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = jwtService.extractUsername(token);
         String role = jwtService.extractRole(token);
 
-        GrantedAuthority authority = new SimpleGrantedAuthority(role);
+        GrantedAuthority authority =
+                new SimpleGrantedAuthority(role);
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                username,
-                null,
-                List.of(authority));
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        List.of(authority));
 
         SecurityContextHolder
                 .getContext()
@@ -56,5 +68,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
 }

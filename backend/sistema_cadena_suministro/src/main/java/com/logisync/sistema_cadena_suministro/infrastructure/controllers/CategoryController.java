@@ -52,7 +52,7 @@ public class CategoryController {
 
     @PreAuthorize("hasAnyRole('PRESIDENT','BRANCH_ADMIN')")
     @GetMapping("/categories")
-    public ResponseEntity<List<CategoryResponse>> findCategories(@RequestParam(required = false) Integer groupId) {
+    public ResponseEntity<List<CategoryResponse>> findCategories(@RequestParam(name = "groupId", required = false) Integer groupId) {
         return ResponseEntity.ok(queryCategoryUseCase.findCategories(groupId).stream().map(restMapper::toResponse).toList());
     }
 }
