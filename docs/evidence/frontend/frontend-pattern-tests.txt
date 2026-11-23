@@ -1,0 +1,26 @@
+
+> logisync-frontend@0.0.0 test
+> node --test tests/patterns/*.test.js
+
+✔ Iterator recorre los elementos en orden y termina la colección (2.9802ms)
+✔ Iterator convierte una colección en arreglo sin alterar el origen (2.8212ms)
+✔ State ofrece acciones según el estado del despacho (5.8726ms)
+✔ Strategy selecciona presentación del gráfico por algoritmo (6.1552ms)
+✔ Interpreter identifica faltante por cantidad recomendada o demanda (2.8848ms)
+✔ Visitor consolida productos, faltantes y unidades sugeridas (5.0691ms)
+✔ Template Method valida, envía y libera el estado de carga (8.7008ms)
+✔ Template Method detiene el envío si falla la validación (0.9279ms)
+✔ Command ejecuta el registro y publica el cambio de inventario (18.6384ms)
+✔ Mediator coordina cambios de bodega y producto en el formulario (6.1752ms)
+✔ Memento restaura los valores originales del formulario (5.0564ms)
+✔ Chain rechaza obligatorios vacíos y números fuera de rango (3.9359ms)
+✔ Chain permite un producto con datos válidos (0.5983ms)
+✔ Event Bus publica eventos y deja de notificar al cancelar la suscripción (5.3567ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2125.4813
