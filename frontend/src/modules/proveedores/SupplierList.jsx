@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import {
   createSupplier,
-  deleteSupplier,
   fetchSuppliers,
   updateSupplier,
 } from './supplierService';
@@ -32,6 +31,7 @@ function SupplierList() {
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [updatingSupplierId, setUpdatingSupplierId] = useState(null);
   const [formError, setFormError] = useState('');
   const [actionError, setActionError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -115,7 +115,7 @@ function SupplierList() {
       name: formData.name.trim(),
       phone: formData.phone.trim(),
       email: formData.email.trim(),
-      ...(editingSupplier ? { status: formData.status } : {}),
+      ...(editingSupplier ? { status: editingSupplier.status } : {}),
     };
 
     try {
@@ -141,25 +141,37 @@ function SupplierList() {
     }
   }
 
-  async function handleDeleteSupplier(supplier) {
-    const confirmed = window.confirm(
-      '¿Eliminar definitivamente el proveedor "' + supplier.name + '"? Se conservarán sus productos e inventario sin proveedor. No se podrá eliminar si tiene órdenes históricas.'
-    );
-    if (!confirmed) return;
+  async function handleToggleSupplierStatus(supplier) {
+    const activating = supplier.status !== 'ACTIVE';
+    const nextStatus = activating ? 'ACTIVE' : 'DELETED';
+    const action = activating ? 'activar' : 'desactivar';
+    if (!activating && !window.confirm('¿Desactivar a "' + supplier.name + '"? Se conservarán su historial y sus relaciones.')) return;
 
     setActionError('');
     setSuccessMessage('');
+    setUpdatingSupplierId(supplier.id);
     try {
-      await deleteSupplier({ token, id: supplier.id });
+      await updateSupplier({
+        token,
+        id: supplier.id,
+        supplier: {
+          nit: supplier.nit,
+          name: supplier.name,
+          phone: supplier.phone,
+          email: supplier.email,
+          status: nextStatus,
+        },
+      });
       setRefreshKey((current) => current + 1);
-      setSuccessMessage('Proveedor eliminado definitivamente. Sus productos e inventario se conservaron sin proveedor.');
+      setSuccessMessage('Proveedor ' + (activating ? 'activado' : 'desactivado') + ' correctamente.');
     } catch (requestError) {
       const detail = requestError.response?.data?.detail
         || requestError.response?.data?.message;
-      setActionError(detail || 'No fue posible eliminar el proveedor.');
+      setActionError(detail || 'No fue posible ' + action + ' el proveedor.');
+    } finally {
+      setUpdatingSupplierId(null);
     }
   }
-
   return (
     <main className="suppliers-page">
       <header className="suppliers-header">
@@ -206,15 +218,6 @@ function SupplierList() {
                 Correo electrónico *
                 <input name="email" type="email" value={formData.email} onChange={handleChange} maxLength="30" required />
               </label>
-              {editingSupplier && (
-                <label>
-                  Estado
-                  <select name="status" value={formData.status} onChange={handleChange}>
-                    <option value="ACTIVE">Activo</option>
-                    <option value="DELETED">Eliminado</option>
-                  </select>
-                </label>
-              )}
             </div>
             <div className="suppliers-form-actions">
               <button className="suppliers-primary-button" type="submit" disabled={saving}>
@@ -277,7 +280,7 @@ function SupplierList() {
                     <td>{supplier.name || '—'}</td>
                     <td>{supplier.phone || '—'}</td>
                     <td>{supplier.email || '—'}</td>
-                    <td>{supplier.status || '—'}</td>
+                    <td>{supplier.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</td>
                     {canManageSuppliers && (
                       <td>
                         <div className="suppliers-row-actions">
@@ -285,11 +288,14 @@ function SupplierList() {
                             Editar
                           </button>
                           <button
-                            className="suppliers-danger-button"
+                            className={supplier.status === 'ACTIVE' ? 'suppliers-danger-button' : ''}
                             type="button"
-                            onClick={() => handleDeleteSupplier(supplier)}
+                            onClick={() => handleToggleSupplierStatus(supplier)}
+                            disabled={updatingSupplierId === supplier.id}
                           >
-                            Eliminar
+                            {updatingSupplierId === supplier.id
+                              ? 'Guardando…'
+                              : supplier.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                           </button>
                         </div>
                       </td>

@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   createProduct,
+  fetchCategories,
   fetchSuppliers,
   updateProduct,
 } from './productService';
+import { ProductValidationChain } from '../../shared/patterns/behavioral/ProductValidationChain';
+import { FormSubmissionTemplate } from '../../shared/patterns/behavioral/FormSubmissionTemplate';
+import { ProductFormMemento } from '../../shared/patterns/behavioral/ProductFormMemento';
+
+const validationChain = new ProductValidationChain();
+const submissionTemplate = new FormSubmissionTemplate();
 
 const emptyForm = {
   name: '',
@@ -19,6 +26,7 @@ const emptyForm = {
   weightKg: '',
   reorderPoint: '0',
   status: 'ACTIVE',
+  categoryIds: [],
 };
 
 function formFromProduct(product) {
@@ -38,13 +46,17 @@ function formFromProduct(product) {
     weightKg: product.weightKg == null ? '' : String(product.weightKg),
     reorderPoint: product.reorderPoint == null ? '0' : String(product.reorderPoint),
     status: product.status || 'ACTIVE',
+    categoryIds: (product.categories || []).map((category) => String(category.id)),
   };
 }
 
 function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
   const isEditing = Boolean(productToEdit);
   const [formData, setFormData] = useState(() => formFromProduct(productToEdit));
+  const [originalForm] = useState(() => new ProductFormMemento(formFromProduct(productToEdit)));
   const [suppliers, setSuppliers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoriesError, setCategoriesError] = useState('');
   const [loadingSuppliers, setLoadingSuppliers] = useState(true);
   const [supplierError, setSupplierError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -74,6 +86,14 @@ function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
     };
   }, [token]);
 
+  useEffect(() => {
+    let active = true;
+    fetchCategories({ token })
+      .then((result) => { if (active) setCategories(result || []); })
+      .catch(() => { if (active) setCategoriesError('No fue posible cargar las categorías.'); });
+    return () => { active = false; };
+  }, [token]);
+
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((current) => ({ ...current, [name]: value }));
@@ -82,8 +102,11 @@ function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setSaving(true);
-    setFormError('');
+    await submissionTemplate.run({
+      validate: () => validationChain.validate(formData),
+      setBusy: setSaving,
+      setError: setFormError,
+      request: async () => {
 
     const product = {
       name: formData.name.trim(),
@@ -98,24 +121,23 @@ function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
       salePrice: Number(formData.salePrice),
       weightKg: Number(formData.weightKg),
       reorderPoint: Number(formData.reorderPoint),
-      categoryIds: [],
+      categoryIds: formData.categoryIds.map(Number),
       ...(isEditing ? { status: formData.status } : {}),
     };
 
-    try {
       if (isEditing) {
         await updateProduct({ token, id: productToEdit.id, product });
       } else {
         await createProduct({ token, product });
       }
-      onSaved(isEditing ? 'Producto actualizado correctamente.' : 'Producto registrado correctamente.');
-    } catch (requestError) {
+      },
+      onSuccess: () => onSaved(isEditing ? 'Producto actualizado correctamente.' : 'Producto registrado correctamente.'),
+      onError: (requestError) => {
       const detail = requestError.response?.data?.detail
         || requestError.response?.data?.message;
       setFormError(detail || 'No fue posible guardar el producto. Revisa los datos e inténtalo de nuevo.');
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
   }
 
   return (
@@ -194,6 +216,24 @@ function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
             Descripción
             <textarea name="description" value={formData.description} onChange={handleChange} maxLength="500" rows="3" />
           </label>
+          <fieldset className="products-category-field products-form-field-wide">
+            <legend>Categorías</legend>
+            {categoriesError ? <span role="alert">{categoriesError}</span> : categories.length ? categories.map((category) => (
+              <label key={category.id}>
+                <input
+                  type="checkbox"
+                  checked={formData.categoryIds.includes(String(category.id))}
+                  onChange={(event) => setFormData((current) => ({
+                    ...current,
+                    categoryIds: event.target.checked
+                      ? [...current.categoryIds, String(category.id)]
+                      : current.categoryIds.filter((id) => id !== String(category.id)),
+                  }))}
+                />
+                {category.name}
+              </label>
+            )) : <span>No hay categorías. El presidente puede crearlas desde Productos.</span>}
+          </fieldset>
           {isEditing && (
             <label className="products-form-field">
               Estado
@@ -213,6 +253,11 @@ function ProductCreateForm({ token, productToEdit, onCancel, onSaved }) {
           >
             {saving ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Guardar producto'}
           </button>
+          {isEditing && (
+            <button className="products-secondary-button" type="button" onClick={() => { setFormData(originalForm.restore()); setFormError(''); }} disabled={saving}>
+              Restaurar valores originales
+            </button>
+          )}
           <button className="products-secondary-button" type="button" onClick={onCancel} disabled={saving}>
             Cancelar
           </button>

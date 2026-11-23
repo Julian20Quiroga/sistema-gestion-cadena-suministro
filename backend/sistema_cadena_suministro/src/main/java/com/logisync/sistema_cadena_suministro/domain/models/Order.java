@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 @Setter
 public class Order {
     private Integer id;
+    private LocalDateTime createdAt;
     private String orderReference;
     private String deliveryAddress;
     private String deliveryCity;

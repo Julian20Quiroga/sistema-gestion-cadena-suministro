@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import {
   createSnapshot,
   fetchSnapshots,
@@ -19,7 +19,7 @@ function Optimization() {
   const [snapshotName, setSnapshotName] = useState('');
   const [autoSnapshot, setAutoSnapshot] = useState(true);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -59,7 +59,6 @@ function Optimization() {
     }
 
     if (token) loadWarehouses();
-    else setLoading(false);
 
     return () => {
       current = false;
@@ -102,8 +101,8 @@ function Optimization() {
   async function handleOptimize() {
     if (!warehouseId) return;
     const confirmed = window.confirm(
-      'La optimización puede reubicar existencias en la bodega seleccionada.' +
-        (autoSnapshot ? ' Se creará un snapshot automático para poder restaurar la distribución.' : '') +
+      'Se analizará el inventario y se mostrarán propuestas de reubicación. Esta acción no mueve existencias.' +
+        (autoSnapshot ? ' Se guardará un snapshot automático del layout.' : '') +
         ' ¿Deseas continuar?'
     );
     if (!confirmed) return;

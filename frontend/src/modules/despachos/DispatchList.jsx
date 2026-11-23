@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import { fetchDispatches, transitionDispatch } from './dispatchService';
 import './DispatchList.css';
+import { DispatchStatePolicy } from '../../shared/patterns/behavioral/DispatchStatePolicy';
+
+const dispatchStatePolicy = new DispatchStatePolicy();
 
 const labels = { PENDIENTE: 'Pendiente', PREPARANDO: 'En preparación', EN_TRANSPORTE: 'En transporte', ENTREGADO: 'Entregado', CANCELADO: 'Cancelado' };
 const getError = (e) => e.response?.data?.detail || e.response?.data?.message || 'No fue posible completar la operación.';
@@ -44,10 +47,11 @@ export default function DispatchList() {
 
   function actions(row) {
     const disabled = busy === row.id;
-    if (row.status === 'PENDIENTE') return <><button disabled={disabled} onClick={() => act(row,'prepare')}>Iniciar alistamiento</button><button className="danger" disabled={disabled} onClick={() => act(row,'cancel')}>Cancelar</button></>;
-    if (row.status === 'PREPARANDO') return <><button disabled={disabled} onClick={() => act(row,'ship')}>Despachar</button><button className="danger" disabled={disabled} onClick={() => act(row,'cancel')}>Cancelar</button></>;
-    if (row.status === 'EN_TRANSPORTE') return <button disabled={disabled} onClick={() => act(row,'deliver')}>Confirmar entrega</button>;
-    return 'Sin acciones';
+    const allowedActions = dispatchStatePolicy.actionsFor(row.status);
+    if (!allowedActions.length) return 'Sin acciones';
+    return allowedActions.map(({ action, label, danger }) => (
+      <button key={action} className={danger ? 'danger' : undefined} disabled={disabled} onClick={() => act(row, action)}>{label}</button>
+    ));
   }
 
   return <main className="dispatch-page">

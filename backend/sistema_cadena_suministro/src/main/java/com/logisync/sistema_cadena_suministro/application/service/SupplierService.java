@@ -50,7 +50,7 @@ public class SupplierService
     }
 
     /**
-     * Realiza el borrado definitivo del proveedor.
+     * Desactiva el proveedor conservando su registro e historial.
      */
     @Override
     @Transactional

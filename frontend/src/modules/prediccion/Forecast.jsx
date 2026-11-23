@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import { fetchProducts } from '../productos/productService';
 import {
   fetchForecastStrategies,
@@ -8,6 +8,9 @@ import {
   generateForecast,
 } from './forecastService';
 import './Forecast.css';
+import { ForecastChartStrategy } from '../../shared/patterns/behavioral/ForecastChartStrategy';
+import { ForecastRuleInterpreter } from '../../shared/patterns/behavioral/ForecastRuleInterpreter';
+import { ForecastResultElement, ForecastSummaryVisitor } from '../../shared/patterns/behavioral/ForecastSummaryVisitor';
 
 const defaultStrategies = [
   'MOVING_AVERAGE',
@@ -23,10 +26,13 @@ const strategyLabels = {
 
 const formatNumber = (value) =>
   Number(value || 0).toLocaleString('es-CO', { maximumFractionDigits: 1 });
+const forecastRuleInterpreter = new ForecastRuleInterpreter();
+const forecastSummaryVisitor = new ForecastSummaryVisitor();
 
 function ForecastChart({ forecast }) {
-  const historical = (forecast.historicalPoints || []).map(Number);
-  const projections = (forecast.projections || []).map(Number);
+  const presentation = ForecastChartStrategy.for(forecast.algorithm)(forecast);
+  const historical = presentation.historical.map(Number);
+  const projections = presentation.projected.map(Number);
   const values = [...historical, ...projections];
   const maxValue = Math.max(1, ...values);
 
@@ -71,7 +77,10 @@ function ForecastCard({ forecast }) {
           <h3>{forecast.productName || 'Producto #' + forecast.productId}</h3>
           <p>{forecast.sku || 'Sin SKU'} · {strategyLabels[forecast.algorithm] || forecast.algorithm}</p>
         </div>
-        {forecast.supplyNeedCreated && (
+      {forecastRuleInterpreter.interpret(forecast) && (
+        <span className="forecast-supply-badge">Compra recomendada</span>
+      )}
+      {forecast.supplyNeedCreated && (
           <span className="forecast-supply-badge">Necesidad #{forecast.supplyNeedId}</span>
         )}
       </header>
@@ -99,6 +108,7 @@ function ForecastCard({ forecast }) {
         </div>
       </div>
       <ForecastChart forecast={forecast} />
+      <p className="forecast-muted">{ForecastChartStrategy.for(forecast.algorithm)(forecast).caption}</p>
     </article>
   );
 }
@@ -116,10 +126,11 @@ function Forecast() {
   const [autoCreateSupplyNeeds, setAutoCreateSupplyNeeds] = useState(false);
   const [forecasts, setForecasts] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingForecast, setLoadingForecast] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const forecastInsights = forecastSummaryVisitor.visit(forecasts.map((forecast) => new ForecastResultElement(forecast)));
 
   useEffect(() => {
     let current = true;
@@ -155,8 +166,6 @@ function Forecast() {
     if (token) {
       loadProducts();
       loadStrategies();
-    } else {
-      setLoadingProducts(false);
     }
 
     return () => {
@@ -349,6 +358,13 @@ function Forecast() {
             <span>Necesidades creadas</span>
             <strong>{summary.supplyNeedsCreated}</strong>
           </article>
+        </section>
+      )}
+
+      {forecasts.length > 0 && (
+        <section className="forecast-summary" aria-label="Resumen de recomendaciones">
+          <article><span>Productos con compra sugerida</span><strong>{forecastInsights.productsWithShortage}</strong></article>
+          <article><span>Unidades sugeridas en total</span><strong>{formatNumber(forecastInsights.suggestedUnits)}</strong></article>
         </section>
       )}
 

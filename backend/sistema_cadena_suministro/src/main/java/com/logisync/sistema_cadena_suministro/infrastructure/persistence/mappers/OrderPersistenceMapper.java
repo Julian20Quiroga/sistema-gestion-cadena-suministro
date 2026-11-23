@@ -11,11 +11,13 @@ import org.mapstruct.Mapping;
 public interface OrderPersistenceMapper {
 
     @Mapping(target = "details", source = "details")
+    @Mapping(target = "createdAt", source = "createdDate")
     Order toDomain(OrderEntity entity);
 
     @Mapping(target = "orderId", source = "order.id")
     OrderDetail toDetailDomain(OrderDetailEntity entity);
 
     @Mapping(target = "details", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
     OrderEntity toEntity(Order domain);
 }

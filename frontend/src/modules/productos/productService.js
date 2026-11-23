@@ -20,6 +20,29 @@ export async function fetchSuppliers({ token, page = 0, size = 100 }) {
   return response.data;
 }
 
+export async function fetchCategoryGroups({ token }) {
+  const response = await httpClient.get('/api/category-groups', { headers: authHeaders(token) });
+  return response.data;
+}
+
+export async function fetchCategories({ token, groupId }) {
+  const response = await httpClient.get('/api/categories', {
+    params: groupId ? { groupId } : {},
+    headers: authHeaders(token),
+  });
+  return response.data;
+}
+
+export async function createCategoryGroup({ token, name }) {
+  const response = await httpClient.post('/api/category-groups', { name }, { headers: authHeaders(token) });
+  return response.data;
+}
+
+export async function createCategory({ token, name, groupId }) {
+  const response = await httpClient.post('/api/categories', { name, groupId: Number(groupId) }, { headers: authHeaders(token) });
+  return response.data;
+}
+
 export async function createProduct({ token, product }) {
   const response = await httpClient.post('/api/products', product, {
     headers: authHeaders(token),

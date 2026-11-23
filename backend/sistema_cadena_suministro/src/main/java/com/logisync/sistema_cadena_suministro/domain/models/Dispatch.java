@@ -9,11 +9,13 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class Dispatch {
     private Integer id;
+    private LocalDateTime createdAt;
     private Integer orderId;
     private Integer warehouseId;
     private Integer vehicleId;

@@ -5,6 +5,7 @@ import com.logisync.sistema_cadena_suministro.application.pagination.PageResult;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.OrderRepository;
 import com.logisync.sistema_cadena_suministro.domain.enums.OrderStatus;
 import com.logisync.sistema_cadena_suministro.domain.models.Order;
+import com.logisync.sistema_cadena_suministro.domain.models.DeliveredDemandRecord;
 import com.logisync.sistema_cadena_suministro.domain.models.OrderDetail;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.OrderDAO;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.PageSupport;
@@ -17,7 +18,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -72,6 +75,12 @@ public class OrderAdapterPersistence implements OrderRepository {
     @Override
     public boolean existsByOrderReference(String orderReference) {
         return dao.existsByOrderReference(orderReference);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeliveredDemandRecord> findDeliveredDemand(LocalDateTime fromDate, LocalDateTime toDate, Integer productId) {
+        return dao.findDeliveredDemand(OrderStatus.ENTREGADO, fromDate, toDate, productId);
     }
 
     @Override

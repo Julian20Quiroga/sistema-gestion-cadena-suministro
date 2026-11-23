@@ -1,6 +1,7 @@
 package com.logisync.sistema_cadena_suministro.infrastructure.persistence;
 
 import com.logisync.sistema_cadena_suministro.domain.enums.OrderStatus;
+import com.logisync.sistema_cadena_suministro.domain.models.DeliveredDemandRecord;
 import com.logisync.sistema_cadena_suministro.infrastructure.persistence.entities.OrderEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface OrderDAO extends JpaRepository<OrderEntity, Integer> {
@@ -17,6 +20,20 @@ public interface OrderDAO extends JpaRepository<OrderEntity, Integer> {
     Optional<OrderEntity> findByOrderReference(String orderReference);
 
     boolean existsByOrderReference(String orderReference);
+
+    @Query("""
+        SELECT new com.logisync.sistema_cadena_suministro.domain.models.DeliveredDemandRecord(
+            d.productId, o.createdDate, d.quantity)
+        FROM OrderEntity o JOIN o.details d
+        WHERE o.status = :status AND o.createdDate >= :fromDate AND o.createdDate < :toDate
+          AND (:productId IS NULL OR d.productId = :productId)
+        """)
+    List<DeliveredDemandRecord> findDeliveredDemand(
+            @Param("status") OrderStatus status,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            @Param("productId") Integer productId
+    );
 
     @Query("""
         SELECT o FROM OrderEntity o

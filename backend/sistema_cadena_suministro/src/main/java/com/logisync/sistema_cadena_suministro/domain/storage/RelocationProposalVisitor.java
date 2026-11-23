@@ -5,6 +5,8 @@ import com.logisync.sistema_cadena_suministro.domain.models.RelocationProposal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * Visitante de la estructura física del almacén para el análisis de distribución ABC.
@@ -78,13 +80,16 @@ public class RelocationProposalVisitor implements StorageNodeVisitor<List<Reloca
         int midpoint = allLocations.size() / 2;
         List<LocationNode> primeLocations = allLocations.subList(0, midpoint);
         List<LocationNode> deepLocations = allLocations.subList(midpoint, allLocations.size());
+        Map<Integer, Long> remainingCapacity = new HashMap<>();
+        primeLocations.forEach(location -> remainingCapacity.put(location.id(), location.freeCapacity()));
 
         for (LocationNode deep : deepLocations) {
             for (StoredItem item : deep.items()) {
                 String abc = productAbcClassification.getOrDefault(item.productId(), "B");
                 if ("A".equalsIgnoreCase(abc)) {
                     for (LocationNode prime : primeLocations) {
-                        long freeSpace = prime.freeCapacity();
+                        if (Objects.equals(prime.id(), deep.id())) continue;
+                        long freeSpace = remainingCapacity.getOrDefault(prime.id(), 0L);
                         if (freeSpace >= item.quantity()) {
                             proposals.add(new RelocationProposal(
                                     item.productId(),
@@ -95,8 +100,9 @@ public class RelocationProposalVisitor implements StorageNodeVisitor<List<Reloca
                                     prime.name(),
                                     (int) item.quantity(),
                                     "A",
-                                    "High-turnover Class A product placed in deep zone; moving to prime dispatch area"
+                                    "Producto clase A ubicado en una posición posterior; se sugiere moverlo a una ubicación anterior con capacidad disponible"
                             ));
+                            remainingCapacity.put(prime.id(), freeSpace - item.quantity());
                             break;
                         }
                     }

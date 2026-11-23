@@ -4,6 +4,7 @@ import com.logisync.sistema_cadena_suministro.application.commands.GenerateForec
 import com.logisync.sistema_cadena_suministro.application.pagination.PageQuery;
 import com.logisync.sistema_cadena_suministro.application.ports.driven.GenerateForecastUseCase;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.InventoryRepository;
+import com.logisync.sistema_cadena_suministro.application.ports.driving.OrderRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.ProductRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.SupplyNeedRepository;
 import com.logisync.sistema_cadena_suministro.application.responses.ForecastBatchSummaryAppResponse;
@@ -13,6 +14,8 @@ import com.logisync.sistema_cadena_suministro.domain.enums.SupplyNeedStatus;
 import com.logisync.sistema_cadena_suministro.domain.exceptions.ResourceNotFoundException;
 import com.logisync.sistema_cadena_suministro.domain.forecast.decorator.SafetyStockDecorator;
 import com.logisync.sistema_cadena_suministro.domain.forecast.decorator.SeasonalAdjustmentDecorator;
+import com.logisync.sistema_cadena_suministro.domain.forecast.interpreter.SupplyNeedRuleContext;
+import com.logisync.sistema_cadena_suministro.domain.forecast.interpreter.SupplyNeedRuleInterpreter;
 import com.logisync.sistema_cadena_suministro.domain.forecast.strategy.ForecastStrategy;
 import com.logisync.sistema_cadena_suministro.domain.forecast.strategy.ForecastStrategyFactory;
 import com.logisync.sistema_cadena_suministro.domain.inventory.StockTotals;
@@ -25,12 +28,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Servicio de aplicación para la proyección predictiva de demanda de inventario.
- * Utiliza los patrones Strategy (algoritmos matemáticos) y Decorator (ajustes de temporada y seguridad).
+ * Utiliza Strategy y Decorator para la predicción, e Interpreter para evaluar reglas de abastecimiento.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,7 +45,9 @@ public class DemandForecastService implements GenerateForecastUseCase {
 
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
+    private final OrderRepository orderRepository;
     private final SupplyNeedRepository supplyNeedRepository;
+    private final SupplyNeedRuleInterpreter supplyNeedRuleInterpreter = new SupplyNeedRuleInterpreter();
 
     /**
      * Genera proyecciones de demanda en lote para un producto específico o todo el catálogo.
@@ -55,7 +64,7 @@ public class DemandForecastService implements GenerateForecastUseCase {
                     .orElseThrow(() -> new ResourceNotFoundException("Product", command.productId()));
             products.add(p);
         } else {
-            products.addAll(productRepository.findAll(null, PageQuery.of(1, 200)).items());
+            products.addAll(productRepository.findAll(null, PageQuery.of(0, PageQuery.MAX_SIZE)).items());
         }
 
         ForecastStrategy strategy = buildConfiguredStrategy(
@@ -79,23 +88,29 @@ public class DemandForecastService implements GenerateForecastUseCase {
             boolean needCreated = false;
             Integer needId = null;
 
-            if (command.autoCreateSupplyNeeds() && shortage > 0) {
-                if (!supplyNeedRepository.existsOpenByProduct(product.getId())) {
-                    SupplyNeed need = new SupplyNeed(
-                            null,
-                            product.getId(),
-                            shortage,
-                            SupplyNeedOrigin.FORECAST,
-                            SupplyNeedStatus.OPEN,
-                            null,
-                            LocalDateTime.now(),
-                            null
-                    );
-                    SupplyNeed savedNeed = supplyNeedRepository.save(need);
-                    needCreated = true;
-                    needId = savedNeed.getId();
-                    supplyNeedsCreated++;
-                }
+            boolean openNeedExists = command.autoCreateSupplyNeeds()
+                    && shortage > 0
+                    && supplyNeedRepository.existsOpenByProduct(product.getId());
+            SupplyNeedRuleContext ruleContext = new SupplyNeedRuleContext(
+                    command.autoCreateSupplyNeeds(),
+                    shortage,
+                    openNeedExists);
+
+            if (supplyNeedRuleInterpreter.shouldCreate(ruleContext)) {
+                SupplyNeed need = new SupplyNeed(
+                        null,
+                        product.getId(),
+                        shortage,
+                        SupplyNeedOrigin.FORECAST,
+                        SupplyNeedStatus.OPEN,
+                        null,
+                        LocalDateTime.now(),
+                        null
+                );
+                SupplyNeed savedNeed = supplyNeedRepository.save(need);
+                needCreated = true;
+                needId = savedNeed.getId();
+                supplyNeedsCreated++;
             }
 
             List<Double> histValues = history.stream().map(HistoricalDataPoint::quantity).toList();
@@ -170,11 +185,20 @@ public class DemandForecastService implements GenerateForecastUseCase {
      * Construye la serie histórica de demanda de referencia para la estabilidad matemática del modelo.
      */
     private List<HistoricalDataPoint> buildHistoricalDemand(Integer productId) {
-        List<HistoricalDataPoint> history = new ArrayList<>();
-        history.add(new HistoricalDataPoint(1, 20.0));
-        history.add(new HistoricalDataPoint(2, 25.0));
-        history.add(new HistoricalDataPoint(3, 30.0));
-        history.add(new HistoricalDataPoint(4, 28.0));
+        YearMonth currentMonth = YearMonth.now(ZoneId.of("America/Bogota"));
+        YearMonth firstMonth = currentMonth.minusMonths(11);
+        LocalDateTime from = firstMonth.atDay(1).atStartOfDay();
+        LocalDateTime to = currentMonth.plusMonths(1).atDay(1).atStartOfDay();
+        Map<YearMonth, Double> quantitiesByMonth = new HashMap<>();
+        orderRepository.findDeliveredDemand(from, to, productId).forEach(record -> {
+            YearMonth month = YearMonth.from(record.deliveredOrderDate());
+            quantitiesByMonth.merge(month, record.quantity().doubleValue(), Double::sum);
+        });
+        List<HistoricalDataPoint> history = new ArrayList<>(12);
+        for (int index = 0; index < 12; index++) {
+            YearMonth month = firstMonth.plusMonths(index);
+            history.add(new HistoricalDataPoint(index + 1, quantitiesByMonth.getOrDefault(month, 0.0)));
+        }
         return history;
     }
 }

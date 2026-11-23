@@ -11,11 +11,13 @@ import org.mapstruct.Mapping;
 public interface DispatchPersistenceMapper {
 
     @Mapping(target = "details", source = "details")
+    @Mapping(target = "createdAt", source = "createdDate")
     Dispatch toDomain(DispatchEntity entity);
 
     @Mapping(target = "dispatchId", source = "dispatch.id")
     DetailDispatch toDetailDomain(DetailDispatchEntity entity);
 
     @Mapping(target = "details", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
     DispatchEntity toEntity(Dispatch domain);
 }

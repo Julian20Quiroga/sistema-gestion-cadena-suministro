@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
-import { createVehicle, fetchActiveVehicles, fetchLatest, fetchTrail } from './trackingService';
+import { useAuth } from '../../shared/context/auth';
+import { fetchProducts } from '../productos/productService';
+import { createVehicle, fetchActiveVehicles, fetchLatest, fetchTrail, fetchProductTraceability, subscribeTelemetry } from './trackingService';
 import './Tracking.css';
 
 const errorText = (e) => e.response?.data?.detail || e.response?.data?.message || 'No fue posible completar la operación.';
@@ -23,6 +24,11 @@ export default function Tracking() {
   const [formError, setFormError] = useState('');
   const [vehicleCreated, setVehicleCreated] = useState('');
   const [rawApiKey, setRawApiKey] = useState('');
+  const [products, setProducts] = useState([]);
+  const [traceProductId, setTraceProductId] = useState('');
+  const [traceEvents, setTraceEvents] = useState([]);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [traceError, setTraceError] = useState('');
   const canRegister = ['PRESIDENT', 'ROLE_PRESIDENT'].includes(role);
 
   useEffect(() => {
@@ -36,6 +42,23 @@ export default function Tracking() {
     });
     return () => { active = false; };
   }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    fetchProducts({ token, page: 0, size: 100 }).then((page) => {
+      if (active) setProducts(page.content || []);
+    }).catch(() => { if (active) setTraceError('No fue posible cargar el catálogo para consultar trazabilidad.'); });
+    return () => { active = false; };
+  }, [token]);
+
+  async function loadProductTrace(event) {
+    event.preventDefault();
+    if (!traceProductId) return;
+    setTraceLoading(true); setTraceError('');
+    try { setTraceEvents(await fetchProductTraceability({ token, productId: traceProductId })); }
+    catch (requestError) { setTraceError(errorText(requestError)); setTraceEvents([]); }
+    finally { setTraceLoading(false); }
+  }
 
   const vehicleId = chosenId || (vehicles[0] ? String(vehicles[0].id) : '');
   useEffect(() => {
@@ -51,6 +74,28 @@ export default function Tracking() {
     }).finally(() => { if (active) setLoadingTrack(false); });
     return () => { active = false; };
   }, [token, vehicleId]);
+
+  useEffect(() => {
+    if (!vehicleId || !token) return undefined;
+    const controller = new AbortController();
+    subscribeTelemetry({ token, signal: controller.signal, onReading: (event) => {
+      const eventVehicleId = Number(String(event.deviceId || '').replace('VEHICLE-', ''));
+      if (eventVehicleId !== Number(vehicleId)) return;
+      const reading = {
+        id: 'live-' + event.timestamp,
+        vehicleId: eventVehicleId,
+        vehiclePlate: vehicles.find((vehicle) => Number(vehicle.id) === eventVehicleId)?.plate,
+        latitude: event.latitude,
+        longitude: event.longitude,
+        speedKmh: event.speedKmh,
+        recordedAt: event.timestamp,
+      };
+      setLatest(reading);
+      setReadings((current) => [reading, ...current.filter((item) => item.recordedAt !== reading.recordedAt)].slice(0, 50));
+      setTrackError('');
+    } });
+    return () => controller.abort();
+  }, [token, vehicleId, vehicles]);
 
   async function handleVehicleSubmit(event) {
     event.preventDefault();
@@ -130,6 +175,24 @@ export default function Tracking() {
           </tbody></table></div>}
         </section>
       </>}
+    <section className="tracking-panel tracking-traceability">
+      <h2>Trazabilidad por producto</h2>
+      <p>Consulta compras, movimientos de bodega, pedidos y despachos relacionados con un producto.</p>
+      <form className="tracking-trace-form" onSubmit={loadProductTrace}>
+        <label htmlFor="trace-product">Producto</label>
+        <select id="trace-product" value={traceProductId} onChange={(event) => setTraceProductId(event.target.value)} required>
+          <option value="">Selecciona un producto</option>
+          {products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)}
+        </select>
+        <button type="submit" disabled={traceLoading || !traceProductId}>{traceLoading ? 'Consultando…' : 'Consultar recorrido'}</button>
+      </form>
+      {traceError && <div className="tracking-error" role="alert">{traceError}</div>}
+      {traceLoading && <p>Consultando etapas de la cadena…</p>}
+      {!traceLoading && traceProductId && !traceEvents.length && !traceError && <p>No hay eventos de trazabilidad para este producto.</p>}
+      {traceEvents.length > 0 && <div className="tracking-scroll"><table><thead><tr><th>Fecha de registro</th><th>Etapa</th><th>Registro</th><th>Estado actual</th><th>Detalle</th><th>Ubicación</th></tr></thead><tbody>
+        {traceEvents.map((event) => <tr key={event.id}><td>{dateText(event.date)}</td><td>{event.stage}</td><td>{event.title}</td><td>{event.status}</td><td>{event.detail}</td><td>{event.location ? <a href={'https://www.google.com/maps?q=' + event.location.latitude + ',' + event.location.longitude} target="_blank" rel="noreferrer">Ver mapa</a> : '—'}</td></tr>)}
+      </tbody></table></div>}
+    </section>
   </main>;
 }
 

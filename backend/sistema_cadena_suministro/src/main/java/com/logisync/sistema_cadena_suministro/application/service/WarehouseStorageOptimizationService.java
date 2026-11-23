@@ -5,6 +5,8 @@ import com.logisync.sistema_cadena_suministro.application.pagination.PageQuery;
 import com.logisync.sistema_cadena_suministro.application.ports.driven.ManageLayoutSnapshotUseCase;
 import com.logisync.sistema_cadena_suministro.application.ports.driven.OptimizeWarehouseLayoutUseCase;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.InventoryRepository;
+import com.logisync.sistema_cadena_suministro.application.ports.driving.OrderRepository;
+import com.logisync.sistema_cadena_suministro.application.ports.driving.ProductRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.LayoutSnapshotRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.StorageSpaceRepository;
 import com.logisync.sistema_cadena_suministro.application.ports.driving.WarehouseRepository;
@@ -18,6 +20,7 @@ import com.logisync.sistema_cadena_suministro.domain.memento.storage.StorageLayo
 import com.logisync.sistema_cadena_suministro.domain.memento.storage.WarehouseLayoutOriginator;
 import com.logisync.sistema_cadena_suministro.domain.models.LayoutSnapshot;
 import com.logisync.sistema_cadena_suministro.domain.models.RelocationProposal;
+import com.logisync.sistema_cadena_suministro.domain.models.Product;
 import com.logisync.sistema_cadena_suministro.domain.models.StorageSpace;
 import com.logisync.sistema_cadena_suministro.domain.models.Warehouse;
 import com.logisync.sistema_cadena_suministro.domain.storage.LocationNode;
@@ -31,7 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +54,8 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
     private final WarehouseRepository warehouseRepository;
     private final StorageSpaceRepository storageSpaceRepository;
     private final InventoryRepository inventoryRepository;
+    private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
     private final LayoutSnapshotRepository layoutSnapshotRepository;
 
     private final WarehouseLayoutOriginator originator = new WarehouseLayoutOriginator();
@@ -66,7 +73,9 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse", warehouseId));
 
-        List<StorageSpace> spaces = storageSpaceRepository.findActiveByWarehouse(warehouseId);
+        List<StorageSpace> spaces = storageSpaceRepository.findActiveByWarehouse(warehouseId).stream()
+                .sorted(Comparator.comparing(StorageSpace::getId))
+                .toList();
 
         Integer snapshotId = null;
         if (autoCreateSnapshot) {
@@ -80,11 +89,16 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
         WarehouseNode root = buildCompositeTree(warehouse, spaces);
 
         // Clasificar productos para el análisis ABC
-        Map<Integer, String> abcMap = new HashMap<>();
+        Map<Integer, Long> demandByProduct = new HashMap<>();
+        LocalDateTime demandWindowStart = LocalDateTime.now(ZoneId.of("America/Bogota")).minusDays(180);
+        orderRepository.findDeliveredDemand(demandWindowStart, LocalDateTime.now(ZoneId.of("America/Bogota")), null)
+                .forEach(record -> demandByProduct.merge(record.productId(), record.quantity().longValue(), Long::sum));
+
+        Map<Integer, String> abcMap = classifyDemand(demandByProduct);
         for (StorageSpace s : spaces) {
-            List<InventoryItem> invList = inventoryRepository.search(null, warehouseId, s.getId(), PageQuery.of(1, 100)).items();
+            List<InventoryItem> invList = inventoryRepository.search(null, warehouseId, s.getId(), PageQuery.of(0, PageQuery.MAX_SIZE)).items();
             for (InventoryItem inv : invList) {
-                abcMap.putIfAbsent(inv.getProductId(), "A");
+                abcMap.putIfAbsent(inv.getProductId(), "C");
             }
         }
 
@@ -93,23 +107,44 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
         List<RelocationProposal> proposals = root.accept(visitor);
 
         List<RelocationProposalAppResponse> mappedProposals = proposals.stream()
-                .map(p -> new RelocationProposalAppResponse(
-                        p.productId(),
-                        p.productSku(),
-                        p.fromLocationId(),
-                        p.fromLocationName(),
-                        p.toLocationId(),
-                        p.toLocationName(),
-                        p.quantity(),
-                        p.abcClassification(),
-                        p.reason()
-                ))
+                .map(p -> {
+                    String sku = productRepository.findById(p.productId()).map(Product::getSku).orElse(p.productSku());
+                    return new RelocationProposalAppResponse(
+                            p.productId(),
+                            sku,
+                            p.fromLocationId(),
+                            p.fromLocationName() + " (#" + p.fromLocationId() + ")",
+                            p.toLocationId(),
+                            p.toLocationName() + " (#" + p.toLocationId() + ")",
+                            p.quantity(),
+                            p.abcClassification(),
+                            p.reason()
+                    );
+                })
                 .toList();
 
-        String summary = "Analyzed %d storage spaces in warehouse '%s'. Identified %d relocation proposals for ABC optimization."
+        String summary = "Se analizaron %d espacios activos de la bodega '%s' y se encontraron %d propuestas de reubicación ABC."
                 .formatted(spaces.size(), warehouse.getName(), mappedProposals.size());
 
         return new LayoutOptimizationAppResponse(warehouseId, snapshotId, mappedProposals, summary);
+    }
+
+    /** Classifica por volumen de unidades en pedidos entregados: A hasta 80%, B hasta 95%, resto C. */
+    private Map<Integer, String> classifyDemand(Map<Integer, Long> demandByProduct) {
+        Map<Integer, String> classes = new HashMap<>();
+        long totalDemand = demandByProduct.values().stream().mapToLong(Long::longValue).sum();
+        if (totalDemand <= 0) return classes;
+
+        List<Map.Entry<Integer, Long>> ranked = demandByProduct.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Long>comparingByValue().reversed())
+                .toList();
+        long cumulative = 0;
+        for (Map.Entry<Integer, Long> entry : ranked) {
+            double priorShare = (double) cumulative / totalDemand;
+            classes.put(entry.getKey(), priorShare < 0.80 ? "A" : priorShare < 0.95 ? "B" : "C");
+            cumulative += entry.getValue();
+        }
+        return classes;
     }
 
     /**
@@ -219,7 +254,7 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
 
         for (StorageSpace s : spaces) {
             if (s.getType() == StorageSpaceType.LOCATION) {
-                List<InventoryItem> invs = inventoryRepository.search(null, warehouse.getId(), s.getId(), PageQuery.of(1, 100)).items();
+                List<InventoryItem> invs = inventoryRepository.search(null, warehouse.getId(), s.getId(), PageQuery.of(0, PageQuery.MAX_SIZE)).items();
                 List<StoredItem> storedItems = invs.stream()
                         .map(i -> new StoredItem(i.getProductId(), i.getPhysicalQuantity()))
                         .toList();

@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -34,11 +35,11 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('PRESIDENT')")
     @PostMapping("/register")
     public ResponseEntity<AuthRegisterResponse> postMethodName(@RequestBody AuthRegisterRequest request) {
         AuthRegisterCommand command = mapper.toRegisterCommand(request);
         AuthRegisterResponse response = mapper.toRegisterResponse(authLoginUseCase.register(command));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
 }

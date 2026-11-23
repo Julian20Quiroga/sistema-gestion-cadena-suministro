@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import { createUser, fetchUsers } from './usersService';
 import './Users.css';
+import LogoutButton from '../../shared/LogoutButton';
 
 const errorMessage = (error) => error.response?.data?.detail || error.response?.data?.message || 'No fue posible completar la operación.';
 
@@ -30,7 +31,16 @@ export default function Users() {
     }
   }, [token]);
 
-  useEffect(() => { if (president) loadUsers(); }, [president, loadUsers]);
+  useEffect(() => {
+    let current = true;
+    if (president) {
+      fetchUsers({ token })
+        .then((data) => { if (current) setUsers(Array.isArray(data) ? data : []); })
+        .catch((requestError) => { if (current) setError(errorMessage(requestError)); })
+        .finally(() => { if (current) setLoading(false); });
+    }
+    return () => { current = false; };
+  }, [president, token]);
 
   async function submit(event) {
     event.preventDefault();
@@ -56,7 +66,7 @@ export default function Users() {
   return <main className="users-page">
     <header className="users-header">
       <div><button className="users-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button><h1>Usuarios</h1><p>Administra las cuentas de acceso de LogiSync.</p></div>
-      <button onClick={loadUsers} disabled={!president || loading}>Actualizar</button>
+      <div className="users-header-actions"><button onClick={loadUsers} disabled={!president || loading}>Actualizar</button><LogoutButton /></div>
     </header>
     {!president ? <section className="users-card"><p className="users-error">Este módulo está disponible únicamente para el presidente.</p></section> : <>
       {notice && <div className="users-notice">{notice}</div>}

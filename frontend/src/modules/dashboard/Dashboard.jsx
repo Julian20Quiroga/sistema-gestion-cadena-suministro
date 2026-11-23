@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import UIFactoryProvider from '../../shared/factories/ui/UIFactoryProvider';
 import './Dashboard.css';
+import LogoutButton from '../../shared/LogoutButton';
+import { fetchDashboardData } from './dashboardService';
 
 function Dashboard() {
-  const { role } = useAuth();
+  const { role, token } = useAuth();
   const navigate = useNavigate();
 
   const uiFactory = role
@@ -17,6 +19,20 @@ function Dashboard() {
     : null;
 
   const [openMenu, setOpenMenu] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState('');
+
+  useEffect(() => {
+    let current = true;
+    fetchDashboardData(token)
+      .then((data) => { if (current) setDashboardData(data); })
+      .catch((error) => {
+        if (current) setDashboardError(error.response?.data?.detail || 'No fue posible cargar los indicadores del tablero.');
+      })
+      .finally(() => { if (current) setDashboardLoading(false); });
+    return () => { current = false; };
+  }, [token]);
 
   const toggleMenu = (menu) => {
     setOpenMenu((currentMenu) => (currentMenu === menu ? null : menu));
@@ -36,6 +52,11 @@ function Dashboard() {
     Operaciones: 'operaciones',
     'Análisis y Optimización': 'analisis',
   };
+
+  const movementDetails = (movement) => (movement.details || []).map((detail) =>
+    `Producto #${detail.productId} · ${detail.quantity}`
+  ).join(', ') || movement.reason || movement.reference || 'Movimiento de inventario';
+  const movementDate = (value) => value ? new Date(value).toLocaleString('es-CO') : 'Fecha no disponible';
 
   return (
     <div className="dashboard">
@@ -138,10 +159,12 @@ function Dashboard() {
           <div className="dashboard-user">
             <div className="dashboard-user-icon">U</div>
 
-            <div>
+            <div className="dashboard-user-details">
               <strong>Usuario</strong>
               <span>{role || 'Usuario'}</span>
             </div>
+
+            <LogoutButton />
           </div>
         </header>
 
@@ -161,7 +184,7 @@ function Dashboard() {
 
               <div>
                 <p>Productos</p>
-                <strong>--</strong>
+                <strong>{dashboardLoading ? '…' : dashboardData?.metrics.products ?? '—'}</strong>
               </div>
             </article>
 
@@ -170,7 +193,7 @@ function Dashboard() {
 
               <div>
                 <p>Proveedores</p>
-                <strong>--</strong>
+                <strong>{dashboardLoading ? '…' : dashboardData?.metrics.suppliers ?? '—'}</strong>
               </div>
             </article>
 
@@ -178,8 +201,8 @@ function Dashboard() {
               <span className="dashboard-card-icon">▤</span>
 
               <div>
-                <p>Inventario</p>
-                <strong>--</strong>
+                <p>Unidades disponibles</p>
+                <strong>{dashboardLoading ? '…' : dashboardData?.metrics.availableUnits ?? '—'}</strong>
               </div>
             </article>
 
@@ -188,31 +211,59 @@ function Dashboard() {
 
               <div>
                 <p>Pedidos</p>
-                <strong>--</strong>
+                <strong>{dashboardLoading ? '…' : dashboardData?.metrics.activeOrders ?? '—'}</strong>
+              </div>
+            </article>
+            <article className="dashboard-card">
+              <span className="dashboard-card-icon">↗</span>
+              <div>
+                <p>Demanda proyectada · 3 periodos</p>
+                <strong>{dashboardLoading ? '…' : dashboardData?.metrics.projectedDemand ?? '—'}</strong>
+              </div>
+            </article>
+            <article className="dashboard-card">
+              <span className="dashboard-card-icon">▥</span>
+              <div>
+                <p>Ocupación de ubicaciones</p>
+                <strong>{dashboardLoading ? '…' : `${dashboardData?.metrics.storageUsagePercent ?? '—'}%`}</strong>
               </div>
             </article>
           </section>
+
+          {dashboardError && <p className="dashboard-data-error" role="alert">{dashboardError}</p>}
 
           <section className="dashboard-panels">
             <article className="dashboard-panel">
               <div className="panel-header">
                 <h3>Resumen</h3>
-                <span>Información general</span>
+                <span>Indicadores actuales de la operación</span>
               </div>
 
-              <div className="panel-empty">
-                <p>Los datos se mostrarán cuando conectemos los módulos.</p>
+              <div className="dashboard-summary-list" aria-live="polite">
+                <p><span>Bodegas activas</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.warehouses ?? '—'}</strong></p>
+                <p><span>Órdenes de compra abiertas</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.openPurchaseOrders ?? '—'}</strong></p>
+                <p><span>Despachos en curso</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.activeDispatches ?? '—'}</strong></p>
+                <p><span>Pedidos entregados</span><strong>{dashboardLoading ? '…' : dashboardData?.ordersByStatus.ENTREGADO || 0}</strong></p>
+                <p><span>Pedidos anulados</span><strong>{dashboardLoading ? '…' : dashboardData?.ordersByStatus.ANULADO || 0}</strong></p>
+                <p><span>Vehículos activos</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.vehicles ?? '—'}</strong></p>
+                <p><span>Pedidos listos para planear ruta</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.routeEligibleOrders ?? '—'}</strong></p>
+                <p><span>Compra sugerida por la proyección</span><strong>{dashboardLoading ? '…' : dashboardData?.metrics.suggestedProcurement ?? '—'} unidades</strong></p>
               </div>
             </article>
 
             <article className="dashboard-panel">
               <div className="panel-header">
                 <h3>Actividad reciente</h3>
-                <span>Últimos movimientos</span>
+                <span>Movimientos de inventario</span>
               </div>
 
-              <div className="panel-empty">
-                <p>No hay actividad para mostrar.</p>
+              <div className="dashboard-activity-list" aria-live="polite">
+                {dashboardLoading ? <p>Cargando actividad…</p> : dashboardData?.recentMovements.length ? dashboardData.recentMovements.map((movement) => (
+                  <div className="dashboard-activity-row" key={movement.id}>
+                    <div><strong>{movement.type || movement.movementType || 'Movimiento'}</strong><span>{movementDetails(movement)}</span></div>
+                    <time>{movementDate(movement.date || movement.movementDate || movement.createdAt)}</time>
+                  </div>
+                )) : <p>No hay movimientos registrados.</p>}
               </div>
             </article>
           </section>

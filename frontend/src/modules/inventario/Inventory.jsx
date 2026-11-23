@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import {
   fetchInventoryLevels,
   fetchInventoryMovements,
@@ -12,11 +12,15 @@ import {
   createInventoryStorageSpace,
 } from './inventoryService';
 import './Inventory.css';
+import { InventoryEntryCommand } from '../../shared/patterns/behavioral/InventoryEntryCommand';
+import { InventoryEntryMediator } from '../../shared/patterns/behavioral/InventoryEntryMediator';
+import { uiEventBus } from '../../shared/patterns/behavioral/UiEventBus';
 
 const pageSize = 20;
 
 function Inventory() {
-  const { token } = useAuth();
+  const { token, role } = useAuth();
+  const canManageWarehouseSetup = ['PRESIDENT', 'ROLE_PRESIDENT'].includes(role);
   const navigate = useNavigate();
   const [filters, setFilters] = useState({ productId: '', warehouseId: '' });
   const [appliedFilters, setAppliedFilters] = useState({ productId: '', warehouseId: '' });
@@ -42,6 +46,8 @@ function Inventory() {
   const [setupSubmitting, setSetupSubmitting] = useState(false);
   const [setupError, setSetupError] = useState('');
   const [setupSuccess, setSetupSuccess] = useState('');
+
+  const entryMediator = useMemo(() => new InventoryEntryMediator({ setForm: setEntryForm, setError: setEntryError, setSuccess: setEntrySuccess }), []);
 
   useEffect(() => {
     let current = true;
@@ -72,6 +78,8 @@ function Inventory() {
     loadInventory();
     return () => { current = false; };
   }, [token, page, appliedFilters, refreshKey]);
+
+  useEffect(() => uiEventBus.subscribe('inventory:changed', () => setRefreshKey((key) => key + 1)), []);
 
   useEffect(() => {
     let current = true;
@@ -124,10 +132,10 @@ function Inventory() {
     setEntrySuccess('');
     setEntrySubmitting(true);
     try {
-      await registerInventoryEntry({ token, ...entryForm });
+      const command = new InventoryEntryCommand({ token, form: entryForm, register: registerInventoryEntry });
+      await command.execute();
       setEntrySuccess('Entrada registrada. Las existencias y movimientos se actualizaron.');
       setEntryForm((form) => ({ ...form, quantity: '1', reference: '' }));
-      setRefreshKey((key) => key + 1);
     } catch (requestError) {
       const detail = requestError.response?.data?.detail || requestError.response?.data?.message;
       setEntryError(detail || 'No fue posible registrar la entrada. Revisa los datos e inténtalo de nuevo.');
@@ -201,9 +209,11 @@ function Inventory() {
           <p>Consulta las existencias y los movimientos registrados.</p>
         </div>
         <div className="inventory-header-actions">
-          <button className="inventory-entry-button" type="button" onClick={() => { setSetupOpen((open) => !open); setSetupError(''); setSetupSuccess(''); }}>
-            {setupOpen ? 'Cerrar configuración' : 'Configurar bodegas'}
-          </button>
+          {canManageWarehouseSetup && (
+            <button className="inventory-entry-button" type="button" onClick={() => { setSetupOpen((open) => !open); setSetupError(''); setSetupSuccess(''); }}>
+              {setupOpen ? 'Cerrar configuración' : 'Configurar bodegas'}
+            </button>
+          )}
           <button className="inventory-entry-button" type="button" onClick={() => { setEntryOpen((open) => !open); setEntryError(''); setEntrySuccess(''); }}>
             {entryOpen ? 'Cerrar entrada' : 'Registrar entrada'}
           </button>
@@ -215,7 +225,7 @@ function Inventory() {
 
       {error && <p className="inventory-message inventory-error" role="alert">{error}</p>}
 
-      {setupOpen && <section className="inventory-card inventory-entry-card">
+      {setupOpen && canManageWarehouseSetup && <section className="inventory-card inventory-entry-card">
         <div className="inventory-card-heading"><div><h2>Configurar bodega y ubicación</h2><p>Se necesita una bodega y una ubicación con capacidad antes de ingresar existencias.</p></div></div>
         <form className="inventory-entry-form" onSubmit={handleWarehouseSubmit}>
           <h3 className="inventory-form-subheading">Crear bodega</h3>
@@ -245,13 +255,13 @@ function Inventory() {
         <div className="inventory-card-heading"><div><h2>Registrar entrada de productos</h2><p>Agrega unidades a una ubicación de almacenamiento disponible.</p></div></div>
         <form className="inventory-entry-form" onSubmit={handleEntrySubmit}>
           <label>Producto
-            <select required value={entryForm.productId} onChange={(event) => setEntryForm((form) => ({ ...form, productId: event.target.value }))}>
+            <select required value={entryForm.productId} onChange={(event) => entryMediator.productChanged(event.target.value)}>
               <option value="">Selecciona un producto</option>
               {products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)}
             </select>
           </label>
           <label>Bodega
-            <select required value={entryForm.warehouseId} onChange={(event) => setEntryForm((form) => ({ ...form, warehouseId: event.target.value, storageSpaceId: '' }))}>
+            <select required value={entryForm.warehouseId} onChange={(event) => entryMediator.warehouseChanged(event.target.value)}>
               <option value="">Selecciona una bodega</option>
               {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
             </select>

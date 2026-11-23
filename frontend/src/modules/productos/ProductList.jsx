@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
+import { useAuth } from '../../shared/context/auth';
 import ProductTablePrototype from '../../shared/prototypes/ProductTablePrototype';
 import {
   deleteProduct,
   fetchProducts,
 } from './productService';
 import ProductCreateForm from './ProductCreateForm';
+import CategoryManager from './CategoryManager';
 import './ProductList.css';
+import { CollectionIterator } from '../../shared/patterns/behavioral/CollectionIterator';
 
 const tableConfig = new ProductTablePrototype().clone().config;
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
@@ -31,8 +33,10 @@ function ProductList() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
   const [actionError, setActionError] = useState('');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   const canManageProducts = role === 'PRESIDENT' || role === 'ROLE_PRESIDENT';
+  const productRows = CollectionIterator.toArray(products);
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -142,15 +146,16 @@ function ProductList() {
           <h1>Productos</h1>
           <p>Consulta y registra productos en LogiSync.</p>
         </div>
-        {canManageProducts && (
-          <button className="products-primary-button" type="button" onClick={openCreateForm}>
-            Nuevo producto
-          </button>
-        )}
+        {canManageProducts && <div className="products-header-actions">
+          <button className="products-secondary-button" type="button" onClick={() => setShowCategoryManager((open) => !open)}>Categorías</button>
+          <button className="products-primary-button" type="button" onClick={openCreateForm}>Nuevo producto</button>
+        </div>}
       </header>
 
       {successMessage && <p className="products-form-success" role="status">{successMessage}</p>}
       {actionError && <p className="products-form-error" role="alert">{actionError}</p>}
+
+      {showCategoryManager && canManageProducts && <CategoryManager token={token} onClose={() => setShowCategoryManager(false)} />}
 
       {showCreateForm && canManageProducts && (
         <ProductCreateForm
@@ -198,7 +203,7 @@ function ProductList() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {productRows.map((product) => (
                   <tr key={product.id}>
                     {tableConfig.columns.map((column) => (
                       <td key={column}>{columnRenderers[column](product)}</td>

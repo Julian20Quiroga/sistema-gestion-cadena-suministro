@@ -8,6 +8,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class RelocationProposalVisitorTest {
 
@@ -38,6 +39,26 @@ class RelocationProposalVisitorTest {
         assertEquals(101, p.productId());
         assertEquals(2, p.fromLocationId());
         assertEquals(1, p.toLocationId());
+        assertNotEquals(p.fromLocationId(), p.toLocationId());
         assertEquals(50, p.quantity());
+    }
+
+    @Test
+    void doesNotOverbookDestinationCapacityAcrossProposals() {
+        WarehouseNode warehouse = new WarehouseNode(1, "Main WH");
+        ZoneNode zone = new ZoneNode(1, "Storage Zone");
+        RackNode frontRack = new RackNode(1, "Rack Front");
+        RackNode backRack = new RackNode(2, "Rack Back");
+        frontRack.add(new LocationNode(1, "Front", 500, List.of()));
+        backRack.add(new LocationNode(2, "Back 1", 500, List.of(new StoredItem(101, 400))));
+        backRack.add(new LocationNode(3, "Back 2", 500, List.of(new StoredItem(102, 400))));
+        zone.add(frontRack);
+        zone.add(backRack);
+        warehouse.add(zone);
+
+        List<RelocationProposal> proposals = warehouse.accept(new RelocationProposalVisitor(Map.of(101, "A", 102, "A")));
+
+        assertEquals(1, proposals.size());
+        assertEquals(400, proposals.get(0).quantity());
     }
 }
