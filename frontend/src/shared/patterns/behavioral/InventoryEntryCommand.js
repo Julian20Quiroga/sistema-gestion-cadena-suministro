@@ -1,4 +1,4 @@
-import { uiEventBus } from './UiEventBus';
+import { uiEventBus } from './UiEventBus.js';
 
 export class InventoryEntryCommand {
   constructor({ token, form, register }) { this.token = token; this.form = form; this.register = register; }
