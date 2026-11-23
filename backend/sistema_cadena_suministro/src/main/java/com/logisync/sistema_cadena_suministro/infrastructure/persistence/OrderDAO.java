@@ -23,9 +23,9 @@ public interface OrderDAO extends JpaRepository<OrderEntity, Integer> {
 
     @Query("""
         SELECT new com.logisync.sistema_cadena_suministro.domain.models.DeliveredDemandRecord(
-            d.productId, o.createdDate, d.quantity)
+            d.productId, o.lastModifiedDate, d.quantity)
         FROM OrderEntity o JOIN o.details d
-        WHERE o.status = :status AND o.createdDate >= :fromDate AND o.createdDate < :toDate
+        WHERE o.status = :status AND o.lastModifiedDate >= :fromDate AND o.lastModifiedDate < :toDate
           AND (:productId IS NULL OR d.productId = :productId)
         """)
     List<DeliveredDemandRecord> findDeliveredDemand(

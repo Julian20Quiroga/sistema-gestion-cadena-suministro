@@ -35,6 +35,13 @@ function ForecastChart({ forecast }) {
   const projections = presentation.projected.map(Number);
   const values = [...historical, ...projections];
   const maxValue = Math.max(1, ...values);
+  const firstHistoricalMonth = new Date();
+  firstHistoricalMonth.setDate(1);
+  firstHistoricalMonth.setMonth(firstHistoricalMonth.getMonth() - historical.length + 1);
+  const historicalLabels = historical.map((_, index) => {
+    const month = new Date(firstHistoricalMonth.getFullYear(), firstHistoricalMonth.getMonth() + index, 1);
+    return new Intl.DateTimeFormat('es-CO', { month: 'short', year: '2-digit' }).format(month);
+  });
 
   if (values.length === 0) {
     return <p className="forecast-muted">No hay puntos para graficar.</p>;
@@ -46,7 +53,7 @@ function ForecastChart({ forecast }) {
         const isProjection = index >= historical.length;
         const label = isProjection
           ? 'Proyección ' + (index - historical.length + 1)
-          : 'Histórico ' + (index + 1);
+          : historicalLabels[index];
 
         return (
           <div className="forecast-chart-column" key={label}>
@@ -61,7 +68,7 @@ function ForecastChart({ forecast }) {
                 style={{ height: Math.max(5, (value / maxValue) * 100) + '%' }}
               />
             </div>
-            <small>{label}</small>
+            <small title={label}>{label}</small>
           </div>
         );
       })}
@@ -108,6 +115,15 @@ function ForecastCard({ forecast }) {
         </div>
       </div>
       <ForecastChart forecast={forecast} />
+      {forecast.historicalPoints?.length > 0 && forecast.historicalPoints.every((point) => Number(point) === 0) ? (
+        <p className="forecast-muted" role="status">
+          No hay pedidos entregados registrados en los últimos 12 meses; la proyección se basa en una demanda histórica de cero.
+        </p>
+      ) : (
+        <p className="forecast-muted">
+          Los meses con valor 0 no tienen pedidos entregados registrados en el período consultado.
+        </p>
+      )}
       <p className="forecast-muted">{ForecastChartStrategy.for(forecast.algorithm)(forecast).caption}</p>
     </article>
   );

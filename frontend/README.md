@@ -32,4 +32,8 @@
 
 ## Estado del proyecto
 
-El frontend está en desarrollo activo. Incluye autenticación, dashboard, despachos, inventario, abastecimiento, pedidos, productos, proveedores, seguimiento, IoT y rutas. El módulo de usuarios y las funciones pendientes se continuarán implementando.
+El frontend incluye autenticación por roles, dashboard, despachos, inventario, abastecimiento, pedidos, productos, categorías, proveedores, usuarios, seguimiento, telemetría IoT, rutas, predicción de demanda y optimización de bodegas.
+
+El módulo de seguimiento recibe lecturas del backend por Server-Sent Events (SSE). El módulo IoT ofrece un formulario de demostración; para operación automática, cualquier dispositivo capaz de realizar solicitudes HTTP puede enviar lecturas al endpoint descrito en `docs/GUIA_INTEGRACION_IOT.md`.
+
+La trazabilidad por producto muestra eventos de abastecimiento, ubicaciones jerárquicas de almacenamiento, destinos de entrega y, cuando hay un despacho en transporte con un vehículo asignado, su última posición telemétrica.

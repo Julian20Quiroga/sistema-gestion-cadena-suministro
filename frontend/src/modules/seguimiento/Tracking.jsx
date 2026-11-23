@@ -190,7 +190,7 @@ export default function Tracking() {
       {traceLoading && <p>Consultando etapas de la cadena…</p>}
       {!traceLoading && traceProductId && !traceEvents.length && !traceError && <p>No hay eventos de trazabilidad para este producto.</p>}
       {traceEvents.length > 0 && <div className="tracking-scroll"><table><thead><tr><th>Fecha de registro</th><th>Etapa</th><th>Registro</th><th>Estado actual</th><th>Detalle</th><th>Ubicación</th></tr></thead><tbody>
-        {traceEvents.map((event) => <tr key={event.id}><td>{dateText(event.date)}</td><td>{event.stage}</td><td>{event.title}</td><td>{event.status}</td><td>{event.detail}</td><td>{event.location ? <a href={'https://www.google.com/maps?q=' + event.location.latitude + ',' + event.location.longitude} target="_blank" rel="noreferrer">Ver mapa</a> : '—'}</td></tr>)}
+        {traceEvents.map((event) => <tr key={event.id}><td>{dateText(event.date)}</td><td>{event.stage}</td><td>{event.title}</td><td>{event.status}</td><td>{event.detail}</td><td>{event.location?.latitude != null && event.location?.longitude != null ? <a href={'https://www.google.com/maps?q=' + event.location.latitude + ',' + event.location.longitude} target="_blank" rel="noreferrer">{event.location.label ? `Ver mapa · ${event.location.label}` : 'Ver mapa'}</a> : event.location?.label || '—'}</td></tr>)}
       </tbody></table></div>}
     </section>
   </main>;

@@ -63,31 +63,84 @@ async function fetchAllPages(path, token, params = {}) {
 }
 
 export async function fetchProductTraceability({ token, productId }) {
-  const [movements, purchaseOrders, orders, dispatches] = await Promise.all([
+  const [movements, purchaseOrders, orders, dispatches, warehouses] = await Promise.all([
     fetchAllPages('/api/inventory/movements', token, { productId }),
     fetchAllPages('/api/purchase-orders', token),
     fetchAllPages('/api/orders', token),
     fetchAllPages('/api/dispatches', token),
+    fetchAllPages('/api/warehouses', token, { status: 'ACTIVE' }),
   ]);
+  const warehouseNames = new Map(warehouses.map((warehouse) => [Number(warehouse.id), warehouse.name]));
+  const storageLocations = new Map();
+  await Promise.all(warehouses.map(async (warehouse) => {
+    try {
+      const response = await httpClient.get(`/api/warehouses/${warehouse.id}/structure`, { headers: headers(token) });
+      const visit = (node, path = []) => {
+        const nextPath = node.type === 'WAREHOUSE' ? path : [...path, node.name];
+        if (node.type === 'LOCATION') {
+          storageLocations.set(Number(node.id), `${warehouse.name} · ${nextPath.join(' · ')}`);
+          return;
+        }
+        (node.children || []).forEach((child) => visit(child, nextPath));
+      };
+      visit(response.data);
+    } catch { /* Keep event IDs as a fallback if a warehouse structure is unavailable. */ }
+  }));
   const events = [];
   purchaseOrders.forEach((order) => (order.details || []).filter((detail) => Number(detail.productId) === Number(productId)).forEach((detail) => {
-    events.push({ id: `purchase-${order.id}-${detail.id}`, date: order.orderDate, stage: 'Abastecimiento', title: `Orden de compra #${order.id}`, status: order.status, detail: `Recibido ${detail.receivedQuantity} de ${detail.quantity} unidades` });
+    const warehouseName = warehouseNames.get(Number(order.warehouseId));
+    events.push({
+      id: `purchase-${order.id}-${detail.id}`,
+      date: order.orderDate,
+      stage: 'Abastecimiento',
+      title: `Orden de compra #${order.id}`,
+      status: order.status,
+      detail: `Recibido ${detail.receivedQuantity} de ${detail.quantity} unidades`,
+      location: warehouseName ? { label: `${warehouseName}${Number(detail.receivedQuantity || 0) > 0 ? ' · recepción registrada' : ' · destino previsto'}` } : null,
+    });
   }));
   movements.forEach((movement) => (movement.details || []).filter((detail) => Number(detail.productId) === Number(productId)).forEach((detail, index) => {
-    events.push({ id: `movement-${movement.id}-${index}`, date: movement.date, stage: 'Almacenamiento', title: movement.type || 'Movimiento de inventario', status: movement.status, detail: `${detail.quantity > 0 ? '+' : ''}${detail.quantity} unidades · espacio #${detail.storageSpaceId}${movement.reason ? ` · ${movement.reason}` : ''}` });
+    events.push({
+      id: `movement-${movement.id}-${index}`,
+      date: movement.date,
+      stage: 'Almacenamiento',
+      title: movement.type || 'Movimiento de inventario',
+      status: movement.status,
+      detail: `${detail.quantity > 0 ? '+' : ''}${detail.quantity} unidades · espacio #${detail.storageSpaceId}${movement.reason ? ` · ${movement.reason}` : ''}`,
+      location: { label: storageLocations.get(Number(detail.storageSpaceId)) || `Espacio #${detail.storageSpaceId}` },
+    });
   }));
   const ordersForProduct = orders.filter((order) => (order.details || []).some((detail) => Number(detail.productId) === Number(productId)));
   ordersForProduct.forEach((order) => {
     const quantity = (order.details || []).filter((detail) => Number(detail.productId) === Number(productId)).reduce((sum, detail) => sum + Number(detail.quantity || 0), 0);
-    events.push({ id: `order-${order.id}`, date: order.createdAt, stage: 'Pedido y entrega', title: `Pedido ${order.orderReference}`, status: order.status, detail: `${order.customerName} · ${quantity} unidades · ${order.deliveryCity}` });
+    const orderLocation = {
+      label: [order.deliveryAddress, order.deliveryCity, order.deliveryCountry].filter(Boolean).join(', '),
+      latitude: order.deliveryLatitude,
+      longitude: order.deliveryLongitude,
+    };
+    const dispatchDestination = {
+      ...orderLocation,
+      label: orderLocation.label ? `Destino de entrega: ${orderLocation.label}` : 'Destino de entrega',
+    };
+    events.push({ id: `order-${order.id}`, date: order.createdAt, stage: 'Pedido y entrega', title: `Pedido ${order.orderReference}`, status: order.status, detail: `${order.customerName} · ${quantity} unidades · ${order.deliveryCity}`, location: orderLocation });
     dispatches.filter((dispatch) => Number(dispatch.orderId) === Number(order.id)).forEach((dispatch) => {
-      events.push({ id: `dispatch-${dispatch.id}`, dispatchId: dispatch.id, date: dispatch.createdAt, stage: 'Despacho y transporte', title: `Despacho #${dispatch.id}`, status: dispatch.status, detail: `Registrado · Bodega #${dispatch.warehouseId}${dispatch.vehicleId ? ` · vehículo #${dispatch.vehicleId}` : ''}`, vehicleId: dispatch.vehicleId });
+      events.push({
+        id: `dispatch-${dispatch.id}`,
+        dispatchId: dispatch.id,
+        date: dispatch.createdAt,
+        stage: 'Despacho y transporte',
+        title: `Despacho #${dispatch.id}`,
+        status: dispatch.status,
+        detail: `Salida: ${warehouseNames.get(Number(dispatch.warehouseId)) || `Bodega #${dispatch.warehouseId}`}${dispatch.vehicleId ? ` · vehículo #${dispatch.vehicleId}` : ''}`,
+        vehicleId: dispatch.vehicleId,
+        location: dispatchDestination,
+      });
     });
   });
   await Promise.all(events.filter((event) => event.stage === 'Despacho y transporte' && event.vehicleId && event.status === 'EN_TRANSPORTE').map(async (event) => {
     try {
       const response = await httpClient.get(`/api/tracking/dispatches/${event.dispatchId}/latest`, { headers: headers(token) });
-      event.location = response.data;
+      event.location = { ...response.data, label: 'Última posición del vehículo' };
     } catch { /* no telemetry has arrived for this dispatch yet */ }
   }));
   return events.sort((left, right) => {

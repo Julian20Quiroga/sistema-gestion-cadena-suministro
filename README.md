@@ -1,4 +1,8 @@
-# LogiSync — Backend
+# LogiSync — Sistema de gestión de cadena de suministro
+
+LogiSync integra una interfaz React y un backend Spring Boot para gestionar proveedores, productos, inventario, bodegas, abastecimiento, pedidos, despachos, seguimiento, predicción de demanda y optimización de rutas y espacios de almacenamiento.
+
+El repositorio contiene el backend en `backend/sistema_cadena_suministro` y el frontend en `frontend`.
 
 ## Tecnologías Usadas
 
@@ -44,6 +48,8 @@
    http://localhost:5050
    ```
    *(Documentación Swagger disponible en `http://localhost:5050/swagger-ui.html`)*
+
+Para conectar un dispositivo a la telemetría, consulta `docs/GUIA_INTEGRACION_IOT.md`.
 ---
 
 # LogiSync — Frontend
