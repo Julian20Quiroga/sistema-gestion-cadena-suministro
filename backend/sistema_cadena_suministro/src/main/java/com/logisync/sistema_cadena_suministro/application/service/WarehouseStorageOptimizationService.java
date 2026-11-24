@@ -200,6 +200,10 @@ public class WarehouseStorageOptimizationService implements OptimizeWarehouseLay
         LayoutSnapshot snapshot = layoutSnapshotRepository.findById(snapshotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Layout snapshot", snapshotId));
 
+        if (!warehouseId.equals(snapshot.getWarehouseId())) {
+            throw new ResourceNotFoundException("Layout snapshot", snapshotId);
+        }
+
         StorageLayoutMemento memento = new StorageLayoutMemento(
                 snapshot.getWarehouseId(),
                 snapshot.getSnapshotName(),

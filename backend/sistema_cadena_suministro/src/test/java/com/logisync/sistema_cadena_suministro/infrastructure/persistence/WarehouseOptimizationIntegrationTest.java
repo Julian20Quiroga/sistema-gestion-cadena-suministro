@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @Transactional
@@ -68,6 +69,26 @@ class WarehouseOptimizationIntegrationTest {
 
         // 4. Restore from initial snapshot
         LayoutSnapshotAppResponse restored = manageLayoutSnapshotUseCase.restoreSnapshot(wh.getId(), snap.id());
-        assertEquals(snap.id(), restored.id());
+                assertEquals(snap.id(), restored.id());
+    }
+            @Test
+        void shouldNotRestoreSnapshotFromAnotherWarehouse() {
+        Warehouse warehouse1 = warehouseRepository.create(new Warehouse(
+                null, "WH Original", "Addr 1", "300",
+                com.logisync.sistema_cadena_suministro.domain.enums.SoftDeleteStatus.ACTIVE, null, null, null
+        ));
+
+        Warehouse warehouse2 = warehouseRepository.create(new Warehouse(
+                null, "WH Different", "Addr 2", "301",
+                com.logisync.sistema_cadena_suministro.domain.enums.SoftDeleteStatus.ACTIVE, null, null, null
+        ));
+
+        LayoutSnapshotAppResponse snapshot = manageLayoutSnapshotUseCase.createSnapshot(
+                new CreateLayoutSnapshotCommand(warehouse1.getId(), "Snapshot Original")
+        );
+
+        assertThrows(RuntimeException.class, () ->
+                manageLayoutSnapshotUseCase.restoreSnapshot(warehouse2.getId(), snapshot.id())
+        );
     }
 }
